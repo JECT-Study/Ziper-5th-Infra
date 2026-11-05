@@ -13,7 +13,7 @@
 
 배포는 예정 종료 전 30분을 포함한 02:30–06:00 KST에 보류한다. 홈이 준비되지 않은 경우에도 양쪽 운영 반영을 시작하지 않는다. 자동 대기열은 두지 않으며 운영자가 수동 재실행한다. 배포 보류·성공·실패 안내는 기존 Discord 채널의 Incoming Webhook으로 보낸다. 키는 Server 저장소 `production` 환경의 `DISCORD_DEPLOY_WEBHOOK_URL` Secret에 둔다. 알림 실패는 배포 성공과 구분하며 불명확한 전송을 재시도하거나 배포를 다시 실행하지 않는다.
 
-공개 전환 전 현재 파일과 전체 이력을 검사한다. 인프라 본체·설정·재사용 workflow·ADR·E2E 기록은 Infra에, main 수동 진입점과 probe 식별 헤더는 Server에 둔다. 공개 Server의 표준 runner에서 운영 작업을 직렬화하며 검토한 Infra SHA를 고정한다. 이 실행 경로의 전환은 아직 구현 완료가 아니다.
+공개 전환 전 현재 파일과 전체 이력을 검사한다. 인프라 본체·설정·재사용 workflow·ADR·E2E 기록은 Infra에, main 수동 진입점과 probe 식별 헤더는 Server에 둔다. 공개 Server의 표준 runner에서 운영 작업을 직렬화하며 검토한 Infra SHA를 고정한다. 홈 단독 실행 경로는 구현했고 Infra main CI를 통과했다. Cloud Run과 동일 이미지 쌍 배포 경로는 후속 단계이며 홈 단독 성공을 쌍 배포 완료로 기록하지 않는다.
 
 성공한 Server main CI의 artifact로 이미지 하나를 만들고 양쪽을 같은 digest로 배포한다. Cloud Run 후보 검증 후 홈을 갱신하며 양쪽 readiness와 digest 일치를 완료 조건으로 삼는다. 마이그레이션은 전용 단계로 분리하고 런타임 중복 수행을 막는다. GCP는 Singapore, 요청 기반·최소 0·최대 1 인스턴스로 시작하고 월 US$1 목표와 지출 차단을 우선한다. 차단 반영 지연과 Registry·Secret Manager·네트워크 비용 때문에 절대 상한을 보장하지 않는다.
 

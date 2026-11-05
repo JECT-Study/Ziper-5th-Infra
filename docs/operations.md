@@ -1,6 +1,6 @@
 # 운영
 
-이 저장소는 Worker·DO의 소유 저장소다. 홈 애플리케이션 컨테이너 배포, Supabase 스키마, Sentry 프로젝트와 uptime 생성은 이 변경의 실행 범위가 아니다. 현재 코드만 준비했으며 운영 Worker·DO·route를 생성하지 않았다. 현재 사실과 증거는 [검증 문서](verification.md)에서 구분한다.
+이 저장소는 Worker·DO·홈 배포 수신기·재사용 배포 workflow의 소유 저장소다. Server는 수동 실행 진입점과 애플리케이션을 관리한다. 운영 Worker·DO·route와 Cloud Run은 아직 생성하지 않았다. 현재 실행 결과와 제한은 [검증 문서](verification.md)와 [nightly walkthrough](nightly-walkthrough-2026-11-06.md)를 따른다.
 
 ## 배포 전제
 
@@ -55,7 +55,7 @@
 
 ## 예약 운영·운영 관측 준비
 
-예약 시간과 예산 목표는 `config/production.json`, 정책은 ADR 0002를 따른다. `node scripts/deployment-window.ts`는 배포 가능 여부를 GITHUB_OUTPUT의 `deferred`와 실행 요약에 기록한다. `node scripts/notify-discord.ts`는 등록한 webhook을 사용하며 채널 ID를 대조하고 메시지 ID만 기록한다. 이 두 스크립트의 배포 workflow 연결은 아직 후속 작업이다.
+예약 시간과 예산 목표는 `config/production.json`, 정책은 ADR 0002를 따른다. `node scripts/deployment-window.ts`는 배포 가능 여부를 GITHUB_OUTPUT의 `deferred`와 실행 요약에 기록한다. `node scripts/notify-discord.ts`는 등록한 webhook을 사용하며 채널 ID를 대조하고 메시지 ID만 기록한다. 두 스크립트는 `deploy-home.yml`에 연결했다. 실제 전송 여부는 실행별 메시지 ID로 확인한다.
 
 `OPS_READ_TOKEN`은 최소 32자 전용 비밀로 생성해 Worker와 외부 검증 제어기에만 등록한다. `/_ops/circuit`에 GET과 Bearer 인증으로 접근한다. 사용자 JWT와 다른 토큰이며 query string에 넣지 않는다. 조회는 상태·최근 전이·다음 alarm만 반환하고 표본·회로를 변경하지 않는다. 운영 배포 생성기는 이 Secret 없이는 차단한다.
 
@@ -63,8 +63,10 @@ Server 저장소 production 환경은 main만 허용하도록 생성·조회 확
 
 ## main 보호와 수동 홈 배포 준비
 
-전체 경로의 CODEOWNERS는 @joonamin이다. 현재 main 브랜치 보호는 관리자에도 적용하며 force push·삭제를 금지하고, PR 승인·check·대화 해결·최신 push의 승인을 요구한다. push/merge 가능한 사용자는 joonamin으로 한정한다. 파일은 main에 머지되어야 code owner 판정에 사용된다. PR 작성자는 자기 PR을 승인할 수 없으므로 다른 작성자 또는 승인자의 정상 리뷰 경로가 필요하며 관리자 우회로 해결하지 않는다.
+전체 경로의 CODEOWNERS는 @joonamin이다. 현재 main 보호는 사용자 요청에 따라 관리자 bypass를 허용한다. force push·삭제는 금지하고 일반 PR에는 승인·check·대화 해결·최신 push 승인을 요구한다. push/merge 가능한 사용자는 joonamin으로 한정한다. CODEOWNERS는 Infra PR #1의 main 병합으로 활성화됐다. 최초 연결에서는 CI 통과 후 사용자가 허용한 관리자 bypass로 병합했으며 이를 사람의 리뷰 승인으로 기록하지 않는다. 정책과 한계는 [ADR 0003](adr/0003-owner-review-and-admin-bypass.md)을 따른다.
 
-최초 검증은 홈 단독 배포를 우선한다. `deploy-home.yml`은 Server main에서만 재사용하도록 제한하며 source와 Infra SHA의 성공한 main CI를 요구한다. 검사한 JAR와 Sentry source bundle을 재사용해 이미지를 만들고 고정된 cloudflared checksum·SSH host key·전용 키·서비스 토큰으로 전송한다. 수신기는 고정 명령과 네 파일만 허용하며 관리자 설치 compose/deploy와 payload 계약을 비교한다. Linux 수신기만 설치된 현재는 실행할 수 없다. Windows 강제 명령과 키 설치를 완료한 뒤 접속부터 검증한다.
+Infra main의 force push·삭제는 bypass 대상이 없는 별도 ruleset `26637239`로도 차단한다. PR 리뷰 bypass와 이력 보호를 분리하며 원본은 `config/github-main-history.json`에 둔다. 관리자가 ruleset 설정 자체를 바꾸는 권한까지 제한한 것은 아니다.
 
-현재 확인한 Server production Secret: DISCORD_DEPLOY_WEBHOOK_URL, ZIPER_CI_SSH_KEY, ZIPER_SSH_KNOWN_HOSTS_B64. CI에는 추가로 CF_ACCESS_CLIENT_ID 및 CF_ACCESS_CLIENT_SECRET이 필요하다. 사용자에게 값 전달을 요청하지 않고 환경 Secret 이름 존재만 조회한다.
+최초 검증은 홈 단독 배포를 우선한다. `deploy-home.yml`은 Server main에서만 재사용하도록 제한하며 source와 Infra SHA의 성공한 main CI를 요구한다. 검사한 JAR와 Sentry source bundle을 재사용해 이미지를 만들고 고정된 cloudflared checksum·SSH host key·전용 키·서비스 토큰으로 전송한다. 수신기는 고정 명령과 네 파일만 허용하며 관리자 설치 compose/deploy와 payload 계약을 비교한다. Windows 강제 명령·전용 키와 WSL 수신기를 설치했고 check 허용·일반 명령 거부·잘못된 archive 거부를 확인했다. 이 검사는 개인 Access 세션을 사용했으므로 CI 서비스 토큰 인증이나 앱 배포 성공의 증거는 아니다.
+
+현재 확인한 Server production Secret은 DISCORD_DEPLOY_WEBHOOK_URL, ZIPER_CI_SSH_KEY, ZIPER_SSH_KNOWN_HOSTS_B64다. CF_ACCESS_CLIENT_ID와 CF_ACCESS_CLIENT_SECRET은 Server와 Infra Repository secrets에서 이름을 확인했다. Server는 `secrets: inherit`로 전달하므로 production 환경에 중복 등록할 필요가 없다. 사용자에게 값 전달을 요청하지 않고 Secret 이름만 조회한다.

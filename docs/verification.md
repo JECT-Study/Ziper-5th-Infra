@@ -1,12 +1,16 @@
 # 검증 조건과 실제 확인 범위
 
+현재 인계와 실제 판정은 [2026-11-06 nightly walkthrough](nightly-walkthrough-2026-11-06.md)를 먼저 읽는다. 아래 날짜별 기록은 실행 당시의 사실이며 이후 병합·설정 변경으로 대체된 항목을 포함한다. 최신 원본은 [nightly 증거 JSON](evidence/2026-11-06-nightly.json)으로 연결한다.
+
+03:17 KST의 Server main 수동 실행 `42082844118`은 예약 시간에 배포를 보류하고 지정 Discord 채널의 메시지 `1567966560079843328`을 확인했다. 이미지 생성·SSH 전달·readiness 검사는 건너뛰었다. 운영 앱 배포·Worker 정상/오류 경로·Cloud Run failover·600초 목표는 아직 미검증이다.
+
 ## 대상과 경계
 
 - 저장소: **[JECT-Study/Ziper-5th-Infra](https://github.com/JECT-Study/Ziper-5th-Infra)**
 - 로컬 경로: `/Users/kangminjun/Documents/Projects/Ziper-5th-Infra`
-- 작업 브랜치: `codex/home-circuit-breaker`
+- 초기 구현 브랜치: `codex/home-circuit-breaker`
 - 정책: [ADR 0001](adr/0001-home-circuit-breaker.md)
-- 이번 작업은 위 Infra 저장소에만 코드·설정·ADR·검증 기록을 추가했다. `Ziper-5th-Server`의 기존 작업 파일은 수정하지 않았다.
+- 초기 회로 구현은 Infra에 두었다. 이후 Server PR #13·#14에 애플리케이션 관측과 수동 진입점을 반영했다. 원래 Server 작업 디렉터리의 사용자 수정은 보존하고 별도 worktree를 사용했다.
 
 **확인한 것은 구현의 로컬 동작이다. 운영 서비스의 장애 전환 완료를 뜻하지 않는다.** 외부 네트워크가 필요한 테스트는 가짜 오리진과 응답으로 대체했고 실제 Google·홈서버·Cloudflare 계정 리소스를 호출하지 않았다. Workers 런타임과 SQLite 저장소 자체는 로컬 workerd/Miniflare를 사용했다.
 

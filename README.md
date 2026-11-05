@@ -23,4 +23,4 @@ BIOS에서 관리하는 예정 종료는 **매일 03:00–06:00, Asia/Seoul**입
 
 일정의 출처는 `config/production.json`입니다. BIOS 일정이 달라지면 이 파일과 README를 함께 수정하고 Worker를 다시 배포합니다. 배포는 종료 전 30분 안전 여유를 포함한 **02:30–06:00**에 보류하며 이후 홈 준비 확인 후 수동 재실행합니다. 월 예산 목표는 US$1이고 비용 제한을 우선합니다.
 
-현재 예약 라우팅·읽기 전용 조회·배포 시간 가드·Discord 전송 스크립트는 작성했으며 운영 workflow 통합·Cloud Run 실제 배포·600초 복구·새벽 관찰은 완료되지 않았습니다. [ADR 0002](docs/adr/0002-scheduled-operation-and-e2e.md)에 합의 정책과 미완료 범위를 기록합니다.
+현재 예약 라우팅·읽기 전용 조회·배포 시간 가드·Discord 전송 스크립트는 작성했고 홈 수동 workflow에 연결했습니다. Cloud Run 실제 배포·600초 복구·새벽 관찰은 완료되지 않았습니다. [ADR 0002](docs/adr/0002-scheduled-operation-and-e2e.md)에 합의 정책과 미완료 범위를 기록합니다.

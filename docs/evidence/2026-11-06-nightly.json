@@ -1,0 +1,1120 @@
+{
+  "observedAt": "2026-11-05T18:19:34.549993+00:00",
+  "scope": "Selected GitHub executions, branch protection and public readiness only",
+  "publicReadiness": {
+    "url": "https://api-ziper.joonamin.dev/readyz",
+    "checkedAt": "2026-11-05T18:19:34.550159+00:00",
+    "status": 403,
+    "originHeader": null,
+    "releaseHeader": null
+  },
+  "protection": {
+    "JECT-Study/Ziper-5th-Infra": {
+      "main": {
+        "adminBypassAllowed": true,
+        "forcePushAllowed": false,
+        "deletionAllowed": false,
+        "requiredApprovals": 1,
+        "codeOwnerReviewRequired": true,
+        "checks": [
+          "check"
+        ]
+      }
+    },
+    "JECT-Study/Ziper-5th-Server": {
+      "develop": {
+        "adminBypassAllowed": true,
+        "forcePushAllowed": false,
+        "deletionAllowed": false,
+        "requiredApprovals": 1,
+        "codeOwnerReviewRequired": true,
+        "checks": [
+          "quality",
+          "test",
+          "container-smoke",
+          "pr-policy",
+          "harness"
+        ]
+      },
+      "main": {
+        "adminBypassAllowed": true,
+        "forcePushAllowed": false,
+        "deletionAllowed": false,
+        "requiredApprovals": 1,
+        "codeOwnerReviewRequired": true,
+        "checks": [
+          "quality",
+          "test",
+          "container-smoke",
+          "pr-policy",
+          "harness"
+        ]
+      }
+    }
+  },
+  "infraMainHistoryRulesets": [
+    {
+      "id": 26637239,
+      "name": "main-history-no-force-or-delete",
+      "enforcement": "active",
+      "bypass_actors": [],
+      "conditions": {
+        "ref_name": {
+          "exclude": [],
+          "include": [
+            "refs/heads/main"
+          ]
+        }
+      },
+      "rules": [
+        {
+          "type": "non_fast_forward"
+        },
+        {
+          "type": "deletion"
+        }
+      ]
+    }
+  ],
+  "productionSettings": {
+    "JECT-Study/Ziper-5th-Infra": {
+      "deploymentBranchPolicy": {
+        "protected_branches": false,
+        "custom_branch_policies": true
+      },
+      "branches": [
+        {
+          "name": "main",
+          "type": "branch"
+        }
+      ],
+      "environmentSecretNames": [],
+      "repositorySecretNames": [
+        "CF_ACCESS_CLIENT_ID",
+        "CF_ACCESS_CLIENT_SECRET"
+      ],
+      "unavailableReads": []
+    },
+    "JECT-Study/Ziper-5th-Server": {
+      "deploymentBranchPolicy": {
+        "protected_branches": false,
+        "custom_branch_policies": true
+      },
+      "branches": [
+        {
+          "name": "main",
+          "type": "branch"
+        }
+      ],
+      "environmentSecretNames": [
+        "DISCORD_DEPLOY_WEBHOOK_URL",
+        "ZIPER_CI_SSH_KEY",
+        "ZIPER_SSH_KNOWN_HOSTS_B64"
+      ],
+      "repositorySecretNames": [
+        "CF_ACCESS_CLIENT_ID",
+        "CF_ACCESS_CLIENT_SECRET"
+      ],
+      "unavailableReads": []
+    }
+  },
+  "pullRequests": [
+    {
+      "number": 1,
+      "html_url": "https://github.com/JECT-Study/Ziper-5th-Infra/pull/1",
+      "state": "closed",
+      "merged": true,
+      "merged_at": "2026-11-05T18:02:49Z",
+      "merge_commit_sha": "974c6b74b0e0d52c2250e5a0dbfd1138151566e5"
+    },
+    {
+      "number": 13,
+      "html_url": "https://github.com/JECT-Study/Ziper-5th-Server/pull/13",
+      "state": "closed",
+      "merged": true,
+      "merged_at": "2026-11-05T18:10:23Z",
+      "merge_commit_sha": "fd1417eb1e7c9c599bce53e5649a593e2e7a8eba"
+    },
+    {
+      "number": 14,
+      "html_url": "https://github.com/JECT-Study/Ziper-5th-Server/pull/14",
+      "state": "closed",
+      "merged": true,
+      "merged_at": "2026-11-05T18:14:07Z",
+      "merge_commit_sha": "b3f0fd7eb74a724caadcc90a13adbdf171b20c4d"
+    }
+  ],
+  "runs": [
+    {
+      "id": 42080482858,
+      "html_url": "https://github.com/JECT-Study/Ziper-5th-Infra/actions/runs/42080482858",
+      "head_sha": "974c6b74b0e0d52c2250e5a0dbfd1138151566e5",
+      "head_branch": "main",
+      "event": "push",
+      "status": "completed",
+      "conclusion": "success",
+      "jobs": [
+        {
+          "name": "check",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run npm ci",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run npm run check",
+              "conclusion": "success"
+            },
+            {
+              "name": "Verify generated binding declarations",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 42081104306,
+      "html_url": "https://github.com/JECT-Study/Ziper-5th-Server/actions/runs/42081104306",
+      "head_sha": "0d5cf90a68653b38e46b80a3f9e435ccb25a45cf",
+      "head_branch": "codex/production-monitoring-20261105",
+      "event": "pull_request",
+      "status": "completed",
+      "conclusion": "success",
+      "jobs": [
+        {
+          "name": "harness",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@v7",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run PYTHONDONTWRITEBYTECODE=1 python3 scripts/test-harness-policy.py",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-harness-policy.py --repo .",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run PYTHONDONTWRITEBYTECODE=1 python3 scripts/test-pr-policy.py",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run PYTHONDONTWRITEBYTECODE=1 python3 scripts/test-public-health.py",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/checkout@v7",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        },
+        {
+          "name": "quality",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@v7",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/setup-java@v6",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run gradle/actions/wrapper-validation@v6",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run gradle/actions/setup-gradle@v6",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run ./gradlew spotlessCheck checkstyleMain checkstyleTest",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/upload-artifact@v7",
+              "conclusion": "skipped"
+            },
+            {
+              "name": "Post Run gradle/actions/setup-gradle@v6",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/setup-java@v6",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/checkout@v7",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        },
+        {
+          "name": "test",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@v7",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/setup-java@v6",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run gradle/actions/wrapper-validation@v6",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run gradle/actions/setup-gradle@v6",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run ./gradlew test bootJar",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run PYTHONDONTWRITEBYTECODE=1 python3 scripts/test-release-artifact.py",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/upload-artifact@v7",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/upload-artifact@v7",
+              "conclusion": "skipped"
+            },
+            {
+              "name": "Post Run gradle/actions/setup-gradle@v6",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/setup-java@v6",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/checkout@v7",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        },
+        {
+          "name": "container-smoke",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@v7",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run gradle/actions/wrapper-validation@v6",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/download-artifact@v8",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run scripts/smoke-test.sh",
+              "conclusion": "success"
+            },
+            {
+              "name": "Build local source image",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/upload-artifact@v7",
+              "conclusion": "skipped"
+            },
+            {
+              "name": "Post Run actions/checkout@v7",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 42081675102,
+      "html_url": "https://github.com/JECT-Study/Ziper-5th-Server/actions/runs/42081675102",
+      "head_sha": "fd1417eb1e7c9c599bce53e5649a593e2e7a8eba",
+      "head_branch": "develop",
+      "event": "push",
+      "status": "completed",
+      "conclusion": "success",
+      "jobs": [
+        {
+          "name": "test",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@v7",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/setup-java@v6",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run gradle/actions/wrapper-validation@v6",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run gradle/actions/setup-gradle@v6",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run ./gradlew test bootJar",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run PYTHONDONTWRITEBYTECODE=1 python3 scripts/test-release-artifact.py",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/upload-artifact@v7",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/upload-artifact@v7",
+              "conclusion": "skipped"
+            },
+            {
+              "name": "Post Run gradle/actions/setup-gradle@v6",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/setup-java@v6",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/checkout@v7",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        },
+        {
+          "name": "quality",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@v7",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/setup-java@v6",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run gradle/actions/wrapper-validation@v6",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run gradle/actions/setup-gradle@v6",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run ./gradlew spotlessCheck checkstyleMain checkstyleTest",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/upload-artifact@v7",
+              "conclusion": "skipped"
+            },
+            {
+              "name": "Post Run gradle/actions/setup-gradle@v6",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/setup-java@v6",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/checkout@v7",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        },
+        {
+          "name": "harness",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@v7",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run PYTHONDONTWRITEBYTECODE=1 python3 scripts/test-harness-policy.py",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-harness-policy.py --repo .",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run PYTHONDONTWRITEBYTECODE=1 python3 scripts/test-pr-policy.py",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run PYTHONDONTWRITEBYTECODE=1 python3 scripts/test-public-health.py",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/checkout@v7",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        },
+        {
+          "name": "container-smoke",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@v7",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run gradle/actions/wrapper-validation@v6",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/download-artifact@v8",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run scripts/smoke-test.sh",
+              "conclusion": "success"
+            },
+            {
+              "name": "Build local source image",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/upload-artifact@v7",
+              "conclusion": "skipped"
+            },
+            {
+              "name": "Post Run actions/checkout@v7",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 42081744774,
+      "html_url": "https://github.com/JECT-Study/Ziper-5th-Server/actions/runs/42081744774",
+      "head_sha": "fd1417eb1e7c9c599bce53e5649a593e2e7a8eba",
+      "head_branch": "develop",
+      "event": "pull_request",
+      "status": "completed",
+      "conclusion": "success",
+      "jobs": [
+        {
+          "name": "harness",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@v7",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run PYTHONDONTWRITEBYTECODE=1 python3 scripts/test-harness-policy.py",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-harness-policy.py --repo .",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run PYTHONDONTWRITEBYTECODE=1 python3 scripts/test-pr-policy.py",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run PYTHONDONTWRITEBYTECODE=1 python3 scripts/test-public-health.py",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/checkout@v7",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        },
+        {
+          "name": "quality",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@v7",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/setup-java@v6",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run gradle/actions/wrapper-validation@v6",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run gradle/actions/setup-gradle@v6",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run ./gradlew spotlessCheck checkstyleMain checkstyleTest",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/upload-artifact@v7",
+              "conclusion": "skipped"
+            },
+            {
+              "name": "Post Run gradle/actions/setup-gradle@v6",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/setup-java@v6",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/checkout@v7",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        },
+        {
+          "name": "test",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@v7",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/setup-java@v6",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run gradle/actions/wrapper-validation@v6",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run gradle/actions/setup-gradle@v6",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run ./gradlew test bootJar",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run PYTHONDONTWRITEBYTECODE=1 python3 scripts/test-release-artifact.py",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/upload-artifact@v7",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/upload-artifact@v7",
+              "conclusion": "skipped"
+            },
+            {
+              "name": "Post Run gradle/actions/setup-gradle@v6",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/setup-java@v6",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/checkout@v7",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        },
+        {
+          "name": "container-smoke",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@v7",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run gradle/actions/wrapper-validation@v6",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/download-artifact@v8",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run scripts/smoke-test.sh",
+              "conclusion": "success"
+            },
+            {
+              "name": "Build local source image",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/upload-artifact@v7",
+              "conclusion": "skipped"
+            },
+            {
+              "name": "Post Run actions/checkout@v7",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 42082268167,
+      "html_url": "https://github.com/JECT-Study/Ziper-5th-Server/actions/runs/42082268167",
+      "head_sha": "b3f0fd7eb74a724caadcc90a13adbdf171b20c4d",
+      "head_branch": "main",
+      "event": "push",
+      "status": "completed",
+      "conclusion": "success",
+      "jobs": [
+        {
+          "name": "quality",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@v7",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/setup-java@v6",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run gradle/actions/wrapper-validation@v6",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run gradle/actions/setup-gradle@v6",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run ./gradlew spotlessCheck checkstyleMain checkstyleTest",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/upload-artifact@v7",
+              "conclusion": "skipped"
+            },
+            {
+              "name": "Post Run gradle/actions/setup-gradle@v6",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/setup-java@v6",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/checkout@v7",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        },
+        {
+          "name": "harness",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@v7",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run PYTHONDONTWRITEBYTECODE=1 python3 scripts/test-harness-policy.py",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run PYTHONDONTWRITEBYTECODE=1 python3 scripts/check-harness-policy.py --repo .",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run PYTHONDONTWRITEBYTECODE=1 python3 scripts/test-pr-policy.py",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run PYTHONDONTWRITEBYTECODE=1 python3 scripts/test-public-health.py",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/checkout@v7",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        },
+        {
+          "name": "test",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@v7",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/setup-java@v6",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run gradle/actions/wrapper-validation@v6",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run gradle/actions/setup-gradle@v6",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run ./gradlew test bootJar",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run PYTHONDONTWRITEBYTECODE=1 python3 scripts/test-release-artifact.py",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/upload-artifact@v7",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/upload-artifact@v7",
+              "conclusion": "skipped"
+            },
+            {
+              "name": "Post Run gradle/actions/setup-gradle@v6",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/setup-java@v6",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/checkout@v7",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        },
+        {
+          "name": "container-smoke",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@v7",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run gradle/actions/wrapper-validation@v6",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/download-artifact@v8",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run scripts/smoke-test.sh",
+              "conclusion": "success"
+            },
+            {
+              "name": "Build local source image",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/upload-artifact@v7",
+              "conclusion": "skipped"
+            },
+            {
+              "name": "Post Run actions/checkout@v7",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": 42082844118,
+      "html_url": "https://github.com/JECT-Study/Ziper-5th-Server/actions/runs/42082844118",
+      "head_sha": "b3f0fd7eb74a724caadcc90a13adbdf171b20c4d",
+      "head_branch": "main",
+      "event": "workflow_dispatch",
+      "status": "completed",
+      "conclusion": "success",
+      "jobs": [
+        {
+          "name": "home / deploy",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run npm ci",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run node scripts/deployment-window.ts",
+              "conclusion": "success"
+            },
+            {
+              "name": "Require successful CI for exact source and infrastructure commits",
+              "conclusion": "skipped"
+            },
+            {
+              "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+              "conclusion": "skipped"
+            },
+            {
+              "name": "Download tested release artifact",
+              "conclusion": "skipped"
+            },
+            {
+              "name": "Package tested image",
+              "conclusion": "skipped"
+            },
+            {
+              "name": "Install pinned cloudflared",
+              "conclusion": "skipped"
+            },
+            {
+              "name": "Deliver immutable release through restricted SSH receiver",
+              "conclusion": "skipped"
+            },
+            {
+              "name": "Verify public readiness",
+              "conclusion": "skipped"
+            },
+            {
+              "name": "Remove temporary SSH credentials",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        },
+        {
+          "name": "home / notify",
+          "conclusion": "success",
+          "steps": [
+            {
+              "name": "Set up job",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run npm ci",
+              "conclusion": "success"
+            },
+            {
+              "name": "Run node scripts/notify-discord.ts",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38",
+              "conclusion": "success"
+            },
+            {
+              "name": "Post Run actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+              "conclusion": "success"
+            },
+            {
+              "name": "Complete job",
+              "conclusion": "success"
+            }
+          ]
+        }
+      ],
+      "discordMessageIds": [
+        "1567966560079843328"
+      ]
+    }
+  ]
+}
