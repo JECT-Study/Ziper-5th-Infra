@@ -7,15 +7,15 @@ on:
         required: true
     secrets:
       ZIPER_SSH_KNOWN_HOSTS_B64:
-        required: true
+        required: false
       ZIPER_CI_SSH_KEY:
-        required: true
+        required: false
       CF_ACCESS_CLIENT_ID:
         required: true
       CF_ACCESS_CLIENT_SECRET:
         required: true
       DISCORD_DEPLOY_WEBHOOK_URL:
-        required: true
+        required: false
 permissions:
   contents: read
   actions: read
@@ -91,11 +91,14 @@ jobs:
         run: |
           set -euo pipefail
           umask 077
+          test -n "$CI_KEY"
           printf '%s\n' "$CI_KEY" > "$RUNNER_TEMP/ziper-key"
           printf '%s' "$SSH_KNOWN_HOSTS_B64" | base64 --decode > "$RUNNER_TEMP/ziper-known-hosts"
           test -n "$SSH_USER"
           test -n "$SSH_KNOWN_HOSTS_B64"
-          ssh -T -o BatchMode=yes -o StrictHostKeyChecking=yes -o "UserKnownHostsFile=$RUNNER_TEMP/ziper-known-hosts" -o "ProxyCommand=$RUNNER_TEMP/cloudflared access ssh --hostname ssh.joonamin.dev" -i "$RUNNER_TEMP/ziper-key" "$SSH_USER@ssh.joonamin.dev" "deploy $GITHUB_SHA" < dist/home-release.tgz
+          connection=(ssh -T -o BatchMode=yes -o StrictHostKeyChecking=yes -o "UserKnownHostsFile=$RUNNER_TEMP/ziper-known-hosts" -o "ProxyCommand=$RUNNER_TEMP/cloudflared access ssh --hostname ssh.joonamin.dev" -i "$RUNNER_TEMP/ziper-key" "$SSH_USER@ssh.joonamin.dev")
+          "${connection[@]}" check
+          "${connection[@]}" "deploy $GITHUB_SHA" < dist/home-release.tgz
       - name: Verify public readiness
         if: steps.window.outputs.deferred != 'true'
         run: python3 server/scripts/verify-public-health.py --url https://api-ziper.joonamin.dev

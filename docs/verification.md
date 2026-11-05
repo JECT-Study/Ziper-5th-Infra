@@ -73,6 +73,14 @@
 | Cloudflare/DO 한도 또는 관측 중단 | 상태가 불명확하면 503, stale 시 홈 회로 OPEN | 일관성 우선 유지 또는 운영자가 명시적으로 우회할 기준 |
 | 홈 복구 후 재장애 | HALF_OPEN 실패 한 번에 OPEN 재전환 | 3회 readiness가 충분한지, 실제 업무 검사가 추가로 필요한지 |
 
+## 2026-11-06 CI 수신기 접속 검증
+
+Server Repository secrets에서 CF_ACCESS_CLIENT_ID와 CF_ACCESS_CLIENT_SECRET 이름을 확인했다. 값은 조회하지 않았다. CI 키만 사용하고 개인 키와 agent를 배제한 SSH에서 `check`는 ZIPER_CI_RECEIVER_READY와 exit 0을 반환했다. 같은 키의 일반 명령은 출력 없이 거부됐다. 유효한 deploy 명령에 잘못된 압축 fixture를 보내자 원격 Python tar parser의 ReadError로 거부됐다. Access는 기존 개인 로그인 세션을 사용했으므로 서비스 토큰 인증 성공으로 표현하지 않는다.
+
+압축 경로, 파일 종류, 중복, 전체 크기와 metadata 크기 검사 4개를 추가해 Infra 총 37개 로컬 테스트 및 타입, 린트, dry-run을 통과했다. 이미지 내부 JAR 해시 대조도 수신기에 추가했다. Windows 수신기는 전송을 2GB로 제한한다. 앱 배포, Worker 정상 및 오류 경로, Discord 수신은 여전히 미검증이다.
+
+Server에 main 수동 진입 workflow를 작성하고 검사와 actionlint를 통과했다. 현재 pin은 Infra 후보 SHA이므로 성공한 Infra main CI가 생긴 뒤 승인된 main SHA로 갱신하기 전에는 배포 gate를 통과하지 못한다.
+
 ## 2026-11-06 예약 운영 구현 중간 증거
 
 Infra에 일정 설정·예약 라우팅·SQLite 최근 전이·전용 토큰의 읽기 전용 조회·배포 시간 가드·Discord 전송 CLI를 추가했다. `npm run check`는 Worker/정책 26 + backup 6 + 배포 설정 1, 총 33개 테스트와 타입·린트·dry-run을 통과했다. Discord CLI는 실제 채널 수신을 아직 검증하지 않았으며 workflow 연결도 후속 작업이다. main 수동 쌍 배포·watchdog·실제 E2E는 미완료다.
