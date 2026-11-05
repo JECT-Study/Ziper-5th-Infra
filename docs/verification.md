@@ -56,7 +56,9 @@
 | 실제 부하·비용 | 미측정 | 요청당 DO 지연·병목·계정 무료 한도와 1분 검사 비용 합산 |
 | Sentry uptime·Discord | 이번 작업에서 생성·수신 확인하지 않음 | 공개 서비스 준비, 별도 uptime 설정, Discord 서버 관리 권한 |
 
-조직 예산 조회는 현재 인증의 `admin:org` 범위 부족으로 실패했다. private main 브랜치 보호 조회도 플랜 제한 403이었다. 이를 설정 완료나 강제된 승인 절차로 표현하지 않는다. 초안 PR에서는 runner job을 건너뛰며, 원격 업로드 후 해당 실행 상태를 별도로 확인한다.
+조직 예산 조회는 현재 인증의 `admin:org` 범위 부족으로 실패했다. private main 브랜치 보호 조회도 플랜 제한 403이었다. 이를 설정 완료나 강제된 승인 절차로 표현하지 않는다.
+
+구현 커밋 `a6804a7304e195871e2bd4b16f476366c411af5a`를 Infra 원격 브랜치에 push하고 [초안 PR #1](https://github.com/JECT-Study/Ziper-5th-Infra/pull/1)을 생성했다. [CI 기록 42049530135](https://github.com/JECT-Study/Ziper-5th-Infra/actions/runs/42049530135)의 결론은 `skipped`이며, Jobs API에서 `check` job의 `runner_id`·`runner_name`이 null임을 확인했다. 원격 runner에서 테스트를 실행한 결과가 아니며 배포도 실행하지 않았다. main 머지·review 요청은 하지 않았다. 이 증거 추가는 문서만의 후속 변경이다.
 
 ## 운영 논의 시나리오
 
