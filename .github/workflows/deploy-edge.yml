@@ -1,0 +1,68 @@
+name: Deploy edge manually
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: production-edge
+  cancel-in-progress: false
+jobs:
+  require-main-ci:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - name: Require successful push CI for this exact main commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          count=$(gh api --method GET "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs" \
+            -f head_sha="$GITHUB_SHA" -f branch=main -f event=push -f status=success \
+            --jq '.workflow_runs | length')
+          test "$count" -gt 0
+  deploy:
+    needs: require-main-ci
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment: production
+    env:
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_ZONE_NAME: ${{ vars.CLOUDFLARE_ZONE_NAME }}
+      PUBLIC_ORIGIN: ${{ vars.PUBLIC_ORIGIN }}
+      HOME_ORIGIN: ${{ vars.HOME_ORIGIN }}
+      BACKUP_ENABLED: ${{ vars.BACKUP_ENABLED || 'false' }}
+      BACKUP_ORIGIN: ${{ vars.BACKUP_ORIGIN }}
+      WRANGLER_SEND_METRICS: 'false'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - name: Prepare route and private secret file
+        run: node scripts/prepare-deploy.ts
+        env:
+          HOME_ACCESS_CLIENT_ID: ${{ secrets.HOME_ACCESS_CLIENT_ID }}
+          HOME_ACCESS_CLIENT_SECRET: ${{ secrets.HOME_ACCESS_CLIENT_SECRET }}
+          CLOUD_RUN_SERVICE_ACCOUNT_JSON: ${{ secrets.CLOUD_RUN_SERVICE_ACCOUNT_JSON }}
+      - name: Require healthy protected home origin
+        run: node scripts/verify-origin.ts
+        env:
+          HOME_ACCESS_CLIENT_ID: ${{ secrets.HOME_ACCESS_CLIENT_ID }}
+          HOME_ACCESS_CLIENT_SECRET: ${{ secrets.HOME_ACCESS_CLIENT_SECRET }}
+      - name: Deploy Worker and SQLite Durable Object
+        run: npx wrangler deploy --config .wrangler/deployment/wrangler.json --secrets-file "$RUNNER_TEMP/ziper-worker-secrets.json" --strict --no-autoconfig
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      - name: Check public readiness and start periodic health checks
+        run: node scripts/verify-public.ts
+      - name: Remove temporary secret file
+        if: always()
+        run: rm -f "$RUNNER_TEMP/ziper-worker-secrets.json"
