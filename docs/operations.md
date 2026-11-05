@@ -10,7 +10,7 @@
 4. 공개 API DNS와 해당 zone의 Workers route 사용 권한을 확인한다. 기존 Tock 서비스·다른 Tunnel·route는 변경하지 않는다. Cloudflare Free에서 요청 한도 초과 시 **fail closed**하도록 zone의 Worker failure mode를 확인한다. 계정·플랫폼 단계의 우회는 코드의 try/catch로 막을 수 없다.
 5. GitHub `production` 환경을 만들고 배포 허용 브랜치를 main으로 제한한다. API token은 해당 계정의 Workers Scripts 편집, 해당 zone의 Workers Routes 편집 및 Wrangler가 요구하는 최소 조회 권한만 부여한다. DNS/Tunnel/Access 관리자 토큰을 CI에 재사용하지 않는다. 실제 요구 권한은 토큰 정책과 배포 응답으로 확인한다.
 
-이 Infra 저장소는 비공개다. 조직의 Actions 포함 사용량과 추가 사용 중단 예산을 확인한 후 원격 검사를 실행한다. 초안 PR에서는 CI job을 건너뛰며, ready-for-review 전환과 이후 push에서는 검사한다. main push는 항상 검사한다. 2026-11-05 조직 예산·사용량 API는 현재 인증의 `admin:org` 범위 부족으로 조회하지 못했다. 브랜치 보호 조회도 현재 private 플랜 제한으로 403이므로 필수 리뷰·상태 검사 강제를 설정했다고 기록하지 않는다. 저장소 공개 전환이나 플랜 업그레이드는 수행하지 않았다. 공식 근거: [Actions 비용](https://docs.github.com/en/billing/concepts/product-billing/github-actions), [조직 예산 조회 권한](https://docs.github.com/en/rest/billing/budgets#get-all-budgets-for-an-organization).
+2026-11-05 당시 Infra는 비공개였고 2026-11-06 이력 검사 후 공개로 전환했다. 아래의 비공개 요금·권한 조회 실패는 당시 기록이다. 초안 PR에서는 CI job을 건너뛰며, ready-for-review 전환과 이후 push에서는 검사한다. main push는 항상 검사한다. 2026-11-05 조직 예산·사용량 API는 현재 인증의 `admin:org` 범위 부족으로 조회하지 못했다. 당시 브랜치 보호 조회는 private 플랜 제한으로 403이었다. 현재는 공개 전환 후 main 보호를 적용했으며 아래 main 보호 절의 실제 재조회 결과를 따른다. 플랜 업그레이드는 수행하지 않았다. 공식 근거: [Actions 비용](https://docs.github.com/en/billing/concepts/product-billing/github-actions), [조직 예산 조회 권한](https://docs.github.com/en/rest/billing/budgets#get-all-budgets-for-an-organization).
 
 ## GitHub production 설정
 
@@ -60,3 +60,11 @@
 `OPS_READ_TOKEN`은 최소 32자 전용 비밀로 생성해 Worker와 외부 검증 제어기에만 등록한다. `/_ops/circuit`에 GET과 Bearer 인증으로 접근한다. 사용자 JWT와 다른 토큰이며 query string에 넣지 않는다. 조회는 상태·최근 전이·다음 alarm만 반환하고 표본·회로를 변경하지 않는다. 운영 배포 생성기는 이 Secret 없이는 차단한다.
 
 Server 저장소 production 환경은 main만 허용하도록 생성·조회 확인했다. 등록 Secret의 값은 읽지 않는다. Cloud Run 구성·청구 계정·자동 복구 watchdog이 확인되기 전에는 장애를 주입하지 않는다.
+
+## main 보호와 수동 홈 배포 준비
+
+전체 경로의 CODEOWNERS는 @joonamin이다. 현재 main 브랜치 보호는 관리자에도 적용하며 force push·삭제를 금지하고, PR 승인·check·대화 해결·최신 push의 승인을 요구한다. push/merge 가능한 사용자는 joonamin으로 한정한다. 파일은 main에 머지되어야 code owner 판정에 사용된다. PR 작성자는 자기 PR을 승인할 수 없으므로 다른 작성자 또는 승인자의 정상 리뷰 경로가 필요하며 관리자 우회로 해결하지 않는다.
+
+최초 검증은 홈 단독 배포를 우선한다. `deploy-home.yml`은 Server main에서만 재사용하도록 제한하며 source와 Infra SHA의 성공한 main CI를 요구한다. 검사한 JAR와 Sentry source bundle을 재사용해 이미지를 만들고 고정된 cloudflared checksum·SSH host key·전용 키·서비스 토큰으로 전송한다. 수신기는 고정 명령과 네 파일만 허용하며 관리자 설치 compose/deploy와 payload 계약을 비교한다. Linux 수신기만 설치된 현재는 실행할 수 없다. Windows 강제 명령과 키 설치를 완료한 뒤 접속부터 검증한다.
+
+현재 확인한 Server production Secret: DISCORD_DEPLOY_WEBHOOK_URL, ZIPER_CI_SSH_KEY, ZIPER_SSH_KNOWN_HOSTS_B64. CI에는 추가로 CF_ACCESS_CLIENT_ID 및 CF_ACCESS_CLIENT_SECRET이 필요하다. 사용자에게 값 전달을 요청하지 않고 환경 Secret 이름 존재만 조회한다.

@@ -80,3 +80,13 @@ Infra에 일정 설정·예약 라우팅·SQLite 최근 전이·전용 토큰의
 Server `production` 환경을 생성하고 main 브랜치만 허용하는 정책을 API로 재조회했다. 사용자 등록 후 Secret 이름 `DISCORD_DEPLOY_WEBHOOK_URL`의 존재만 확인했다. 값은 조회하지 않았다. SSH의 정적 응답 확인은 성공했다. 원격 Docker 조회에서는 집어 전용 cloudflared만 실행 중이고 current-version 기록은 없었다. 앱 배포 성공을 뜻하지 않는다. GCP `ziper-production`은 ACTIVE이지만 billingEnabled는 false였다. GCP 리소스를 새로 생성하거나 장애를 주입하지 않았다.
 
 공식 gitleaks v8.30.1 도구의 다운로드 SHA256을 확인한 뒤 기존 전체 3개 Git 커밋을 검사했고 발견 0개였다. 현재 수정 내용은 커밋 이후 이력 전체 검사로 다시 확인한 뒤 공개 여부를 결정한다. 공개 전환은 아직 하지 않았다.
+
+## 2026-11-06 01:07 KST 배포 전 실환경 확인
+
+[정제된 원본 판정 JSON](evidence/2026-11-06-predeployment.json)을 PR #1에 연결한다. 공개 HTTPS 점검은 `2026-11-05T16:07:31Z`에 HTTP 502로 실패했다. SSH·Docker는 정상이고 집어 cloudflared만 실행 중이며 앱과 current-version은 없다. 따라서 실제 배포·백업 전환 E2E 성공 증거는 아직 없다. 이전의 HTTP 403 관찰과 별개의 최신 실행이다.
+
+Server production에는 웹훅·전용 CI SSH 키·base64 인코딩한 호스트 키 고정 Secret이 존재한다. CF_ACCESS_CLIENT_ID/SECRET은 아직 API 이름 목록에서 확인되지 않았다. GCP 청구 연결은 true로 재조회했으며 Cloud Run은 생성하지 않았다.
+
+Infra 공개 전환 후 main 보호를 실제 적용·재조회했다: force push/삭제 금지, 관리자 우회 금지, 최신 check 성공, 승인 1개, CODEOWNERS 리뷰, 새 push 시 승인 초기화, 마지막 push 승인, 반영 사용자 joonamin 제한이다. CODEOWNERS는 PR #1에 있으나 아직 main에 없으므로 소유자 지정은 머지 후 활성화된다. 현재 PR 작성자가 joonamin이며 GitHub는 자기 PR 승인을 허용하지 않는다. 이 보호를 우회하거나 승인한 것으로 기록하지 않는다.
+
+홈 배포 재사용 workflow와 전송·수신 스크립트는 작성하고 actionlint/문법 검사를 수행했다. Windows 제한 수신기·키의 원격 설치, CI 정책 허용, Server main 진입점과 실제 수동 실행은 미완료다. 로컬·정적 통과를 실환경 배포 통과로 대체하지 않는다.

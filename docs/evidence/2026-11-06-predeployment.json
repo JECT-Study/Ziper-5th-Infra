@@ -1,0 +1,65 @@
+{
+  "scope": "predeployment checks; production deployment and failover E2E are not complete",
+  "publicHealth": {
+    "checkedAt": "2026-11-05T16:07:31.955445+00:00",
+    "origin": "https://api-ziper.joonamin.dev",
+    "ok": false,
+    "samples": [],
+    "error": "Health endpoint returned HTTP 502"
+  },
+  "home": {
+    "sshVerified": true,
+    "dockerVerified": true,
+    "ziperTunnelRunning": true,
+    "ziperAppRunning": false,
+    "currentVersionRecorded": false,
+    "linuxReceiverInstalled": true,
+    "restrictedWindowsReceiverAndKeyInstalled": false
+  },
+  "gcp": {
+    "projectId": "ziper-production",
+    "billingEnabled": true,
+    "cloudRunProvisionedByThisTask": false
+  },
+  "github": {
+    "productionBranches": [
+      "main"
+    ],
+    "secretNamesVerified": [
+      "DISCORD_DEPLOY_WEBHOOK_URL",
+      "ZIPER_CI_SSH_KEY",
+      "ZIPER_SSH_KNOWN_HOSTS_B64"
+    ],
+    "secretNamesNotObserved": [
+      "CF_ACCESS_CLIENT_ID",
+      "CF_ACCESS_CLIENT_SECRET"
+    ],
+    "infraVisibility": "public",
+    "mainProtection": {
+      "forcePush": false,
+      "deletion": false,
+      "adminBypass": false,
+      "requiredApprovals": 1,
+      "codeOwnerReview": true,
+      "staleReviewDismissal": true,
+      "lastPushApproval": true,
+      "pushUsers": [
+        "joonamin"
+      ],
+      "checks": [
+        "check"
+      ]
+    },
+    "codeownersFileMergedToMain": false
+  },
+  "verification": {
+    "infraLocalTestsPassed": 33,
+    "serverCheckPassed": true,
+    "serverProbeAssertionsPassed": true,
+    "workflowStaticValidationPassed": true,
+    "productionManualDeploymentRun": false,
+    "discordDeliveryVerified": false,
+    "failoverWithin600Seconds": null,
+    "overnightCycleVerified": false
+  }
+}
