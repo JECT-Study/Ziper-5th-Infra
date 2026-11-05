@@ -72,3 +72,11 @@
 | Cloud Run cold start·인증 오류 | 백업 요청 실패 시 503, 홈 우회·쓰기 재전송 없음 | 0원 우선 조건과 복구 지연·첫 요청 실패의 허용 범위 |
 | Cloudflare/DO 한도 또는 관측 중단 | 상태가 불명확하면 503, stale 시 홈 회로 OPEN | 일관성 우선 유지 또는 운영자가 명시적으로 우회할 기준 |
 | 홈 복구 후 재장애 | HALF_OPEN 실패 한 번에 OPEN 재전환 | 3회 readiness가 충분한지, 실제 업무 검사가 추가로 필요한지 |
+
+## 2026-11-06 예약 운영 구현 중간 증거
+
+Infra에 일정 설정·예약 라우팅·SQLite 최근 전이·전용 토큰의 읽기 전용 조회·배포 시간 가드·Discord 전송 CLI를 추가했다. `npm run check`는 Worker/정책 26 + backup 6 + 배포 설정 1, 총 33개 테스트와 타입·린트·dry-run을 통과했다. Discord CLI는 실제 채널 수신을 아직 검증하지 않았으며 workflow 연결도 후속 작업이다. main 수동 쌍 배포·watchdog·실제 E2E는 미완료다.
+
+Server `production` 환경을 생성하고 main 브랜치만 허용하는 정책을 API로 재조회했다. 사용자 등록 후 Secret 이름 `DISCORD_DEPLOY_WEBHOOK_URL`의 존재만 확인했다. 값은 조회하지 않았다. SSH의 정적 응답 확인은 성공했다. 원격 Docker 조회에서는 집어 전용 cloudflared만 실행 중이고 current-version 기록은 없었다. 앱 배포 성공을 뜻하지 않는다. GCP `ziper-production`은 ACTIVE이지만 billingEnabled는 false였다. GCP 리소스를 새로 생성하거나 장애를 주입하지 않았다.
+
+공식 gitleaks v8.30.1 도구의 다운로드 SHA256을 확인한 뒤 기존 전체 3개 Git 커밋을 검사했고 발견 0개였다. 현재 수정 내용은 커밋 이후 이력 전체 검사로 다시 확인한 뒤 공개 여부를 결정한다. 공개 전환은 아직 하지 않았다.

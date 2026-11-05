@@ -1,3 +1,4 @@
+import { scheduledBackup, homeSchedule } from "./schedule";
 import { DurableObject } from "cloudflare:workers";
 import { beginProbe, checkFreshness, completeProbe, initialState, POLICY, stateSchema } from "./policy";
 import type { CircuitState } from "./policy";
@@ -13,6 +14,7 @@ export class HomeCircuit extends DurableObject<Env> {
       ctx.storage.sql.exec("CREATE TABLE IF NOT EXISTS circuit (id INTEGER PRIMARY KEY CHECK (id=1), state TEXT NOT NULL)");
       ctx.storage.sql.exec("CREATE TABLE IF NOT EXISTS identity_token (id INTEGER PRIMARY KEY CHECK (id=1), audience TEXT NOT NULL, token TEXT NOT NULL, expires_at INTEGER NOT NULL)");
       ctx.storage.sql.exec("CREATE TABLE IF NOT EXISTS identity_refresh (id INTEGER PRIMARY KEY CHECK (id=1), owner TEXT NOT NULL, lease_until INTEGER NOT NULL)");
+      ctx.storage.sql.exec("CREATE TABLE IF NOT EXISTS transitions (at INTEGER NOT NULL, previous TEXT NOT NULL, next TEXT NOT NULL, generation INTEGER NOT NULL)");
       ctx.storage.sql.exec("INSERT OR IGNORE INTO circuit VALUES (1, ?)", JSON.stringify(initialState(Date.now())));
       if (await ctx.storage.getAlarm() === null) await ctx.storage.setAlarm((Math.floor(Date.now() / POLICY.intervalMs) + 1) * POLICY.intervalMs);
     });
@@ -26,6 +28,8 @@ export class HomeCircuit extends DurableObject<Env> {
   private save(previous: CircuitState, next: CircuitState): void {
     this.ctx.storage.sql.exec("UPDATE circuit SET state=? WHERE id=1", JSON.stringify(next));
     if (previous.mode.kind !== next.mode.kind) {
+      this.ctx.storage.sql.exec("INSERT INTO transitions VALUES (?, ?, ?, ?)", Date.now(), previous.mode.kind, next.mode.kind, next.generation);
+      this.ctx.storage.sql.exec("DELETE FROM transitions WHERE rowid NOT IN (SELECT rowid FROM transitions ORDER BY rowid DESC LIMIT 100)");
       console.info(JSON.stringify({ event: "circuit_transition", from: previous.mode.kind, to: next.mode.kind, generation: next.generation }));
     }
   }
@@ -37,7 +41,7 @@ export class HomeCircuit extends DurableObject<Env> {
       if (previous !== next) this.save(previous, next);
       return next.mode.kind;
     });
-    if (mode === "CLOSED") return { target: "home" };
+    if (mode === "CLOSED" && !(this.env.SCHEDULE_ENABLED === "true" && scheduledBackup(Date.now()))) return { target: "home" };
     const { backupOrigin } = getConfig(this.env);
     if (!backupOrigin) return { target: "unavailable" };
     const refresh = this.ctx.storage.transactionSync(() => {
@@ -63,6 +67,15 @@ export class HomeCircuit extends DurableObject<Env> {
     } finally {
       this.ctx.storage.sql.exec("DELETE FROM identity_refresh WHERE id=1 AND owner=?", refresh.owner);
     }
+  }
+
+  async snapshot() {
+    const state = this.load();
+    const routing = checkFreshness(state, Date.now());
+    const scheduled = this.env.SCHEDULE_ENABLED === "true" && scheduledBackup(Date.now());
+    return { state, observedAt: Date.now(), nextAlarmAt: await this.ctx.storage.getAlarm(), schedule: homeSchedule,
+      reason: scheduled ? "scheduled_backup" : routing.mode.kind === "CLOSED" ? "home" : "circuit_backup",
+      transitions: this.ctx.storage.sql.exec<{ at: number; previous: string; next: string; generation: number }>("SELECT at, previous, next, generation FROM transitions ORDER BY rowid DESC LIMIT 100").toArray() };
   }
 
   async alarm(): Promise<void> {

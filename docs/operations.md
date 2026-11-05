@@ -52,3 +52,11 @@
 ## 알려진 도구 제한
 
 2026-11-05 설치 시 `npm audit`은 minimatch의 glob 증폭 취약점에서 파생된 개발 도구 의존성 9개를 moderate로 보고했다. 런타임 의존성은 zod뿐이다. 신뢰하지 않는 glob을 운영 API에서 받지 않으며 lint glob은 저장소의 고정 명령이다. 자동 `--force`나 호환 범위를 벗어난 의존성 강제 교체는 하지 않았다. 업데이트 시 audit와 호환성을 다시 확인한다.
+
+## 예약 운영·운영 관측 준비
+
+예약 시간과 예산 목표는 `config/production.json`, 정책은 ADR 0002를 따른다. `node scripts/deployment-window.ts`는 배포 가능 여부를 GITHUB_OUTPUT의 `deferred`와 실행 요약에 기록한다. `node scripts/notify-discord.ts`는 등록한 webhook을 사용하며 채널 ID를 대조하고 메시지 ID만 기록한다. 이 두 스크립트의 배포 workflow 연결은 아직 후속 작업이다.
+
+`OPS_READ_TOKEN`은 최소 32자 전용 비밀로 생성해 Worker와 외부 검증 제어기에만 등록한다. `/_ops/circuit`에 GET과 Bearer 인증으로 접근한다. 사용자 JWT와 다른 토큰이며 query string에 넣지 않는다. 조회는 상태·최근 전이·다음 alarm만 반환하고 표본·회로를 변경하지 않는다. 운영 배포 생성기는 이 Secret 없이는 차단한다.
+
+Server 저장소 production 환경은 main만 허용하도록 생성·조회 확인했다. 등록 Secret의 값은 읽지 않는다. Cloud Run 구성·청구 계정·자동 복구 watchdog이 확인되기 전에는 장애를 주입하지 않는다.

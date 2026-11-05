@@ -16,3 +16,11 @@ npm run check
 **운영 배포는 아직 완료되지 않았습니다.** 기본 설정은 운영 route 없이 예약 도메인 `.invalid`를 사용하며 Cloud Run은 꺼져 있습니다. [운영 문서](docs/operations.md)의 실제 홈 전용 호스트·Access·GitHub production 설정이 필요합니다. PR과 main push는 CI만 실행하고 운영 배포는 성공한 main CI 이후 수동 워크플로로 실행합니다.
 
 [검증 조건과 실제 확인 범위](docs/verification.md) · [문서 지도](docs/context-map.md)
+
+## 홈서버 운영 일정
+
+BIOS에서 관리하는 예정 종료는 **매일 03:00–06:00, Asia/Seoul**입니다. 외부에서 전원이나 BIOS 설정을 바꾸지 않습니다. 이 시간대에는 회로의 실패율 판정을 기다리지 않고 Cloud Run을 선택하고, 종료 후에는 홈 회복이 확인되어야 돌아갑니다.
+
+일정의 출처는 `config/production.json`입니다. BIOS 일정이 달라지면 이 파일과 README를 함께 수정하고 Worker를 다시 배포합니다. 배포는 종료 전 30분 안전 여유를 포함한 **02:30–06:00**에 보류하며 이후 홈 준비 확인 후 수동 재실행합니다. 월 예산 목표는 US$1이고 비용 제한을 우선합니다.
+
+현재 예약 라우팅·읽기 전용 조회·배포 시간 가드·Discord 전송 스크립트는 작성했으며 운영 workflow 통합·Cloud Run 실제 배포·600초 복구·새벽 관찰은 완료되지 않았습니다. [ADR 0002](docs/adr/0002-scheduled-operation-and-e2e.md)에 합의 정책과 미완료 범위를 기록합니다.

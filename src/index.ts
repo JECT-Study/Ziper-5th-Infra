@@ -15,6 +15,14 @@ export default {
       const config = getConfig(env);
       const incoming = new URL(request.url);
       if (incoming.origin !== config.publicOrigin) return new Response(null, { status: 404 });
+      if (incoming.pathname === "/_ops/circuit") {
+        if (request.method !== "GET" || !env.OPS_READ_TOKEN || env.OPS_READ_TOKEN.length < 32) return new Response(null, { status: 404 });
+        const supplied = request.headers.get("Authorization") ?? "";
+        const encoder = new TextEncoder();
+        const [actual, expected] = await Promise.all([supplied, `Bearer ${env.OPS_READ_TOKEN}`].map(value => crypto.subtle.digest("SHA-256", encoder.encode(value))));
+        if (!actual || !expected || !crypto.subtle.timingSafeEqual(actual, expected)) return new Response(null, { status: 404 });
+        return Response.json(await env.HOME_CIRCUIT.getByName("ziper-home-v1").snapshot(), { headers: { "Cache-Control": "no-store" } });
+      }
       const decision = await env.HOME_CIRCUIT.getByName("ziper-home-v1").decide();
       if (decision.target === "unavailable") return unavailable();
       const origin = decision.target === "home" ? config.homeOrigin : config.backupOrigin;

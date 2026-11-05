@@ -49,6 +49,7 @@ jobs:
       - name: Prepare route and private secret file
         run: node scripts/prepare-deploy.ts
         env:
+          OPS_READ_TOKEN: ${{ secrets.OPS_READ_TOKEN }}
           HOME_ACCESS_CLIENT_ID: ${{ secrets.HOME_ACCESS_CLIENT_ID }}
           HOME_ACCESS_CLIENT_SECRET: ${{ secrets.HOME_ACCESS_CLIENT_SECRET }}
           CLOUD_RUN_SERVICE_ACCOUNT_JSON: ${{ secrets.CLOUD_RUN_SERVICE_ACCOUNT_JSON }}

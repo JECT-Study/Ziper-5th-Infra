@@ -126,4 +126,18 @@ describe("Worker and SQLite Durable Object", () => {
     expect((await read()).samples[0]?.healthy).toBe(false);
     expect(outbound).toHaveBeenCalledTimes(1001);
   });
+  it("requires a separate operations token and never reveals identity credentials", async () => {
+    await seed(initialState(Date.now()));
+    const before = await read();
+    expect((await exports.default.fetch("https://api.example.test/_ops/circuit")).status).toBe(404);
+    const response = await exports.default.fetch("https://api.example.test/_ops/circuit", { headers: { Authorization: "Bearer ops-fixture-secret-token-32-bytes-long" } });
+    expect(response.status).toBe(200);
+    const body = await response.text();
+    expect(body).toContain('"reason":"home"');
+    expect(body).not.toContain("test-secret");
+    expect(body).not.toContain("identity_token");
+    expect(await read()).toEqual(before);
+    expect(outbound).not.toHaveBeenCalled();
+  });
+
 });

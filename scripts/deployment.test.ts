@@ -14,7 +14,7 @@ const configSchema = z.object({
 await test("배포설정경계_경로와비밀파일을검사하고_잘못된설정을거부한다", () => {
   const directory = mkdtempSync(join(tmpdir(), "ziper-deploy-fixture-"));
   const env = {
-    ...process.env, CLOUDFLARE_ACCOUNT_ID: "a".repeat(32), CLOUDFLARE_ZONE_NAME: "example.test",
+    ...process.env, OPS_READ_TOKEN: "fixture".repeat(8), CLOUDFLARE_ACCOUNT_ID: "a".repeat(32), CLOUDFLARE_ZONE_NAME: "example.test",
     PUBLIC_ORIGIN: "https://api.example.test", HOME_ORIGIN: "https://home.example.test",
     BACKUP_ENABLED: "false", BACKUP_ORIGIN: "", HOME_ACCESS_CLIENT_ID: "fixture-id",
     HOME_ACCESS_CLIENT_SECRET: "fixture-secret", RUNNER_TEMP: directory

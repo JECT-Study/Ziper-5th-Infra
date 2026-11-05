@@ -9,6 +9,7 @@ const envSchema = z.object({
   PUBLIC_ORIGIN: z.string(), HOME_ORIGIN: z.string(),
   BACKUP_ORIGIN: z.string().default(""), BACKUP_ENABLED: z.enum(["true", "false"]).default("false"),
   HOME_ACCESS_CLIENT_ID: z.string().min(1), HOME_ACCESS_CLIENT_SECRET: z.string().min(1),
+  OPS_READ_TOKEN: z.string().min(32),
   CLOUD_RUN_SERVICE_ACCOUNT_JSON: z.string().default(""),
   RUNNER_TEMP: z.string().min(1)
 });
@@ -36,9 +37,10 @@ try {
     ...template, main: resolve(template.main), tsconfig: resolve("tsconfig.json"),
     account_id: env.CLOUDFLARE_ACCOUNT_ID,
     routes: [{ pattern: `${hostname}/*`, zone_name: env.CLOUDFLARE_ZONE_NAME }],
-    vars: { PUBLIC_ORIGIN: config.publicOrigin, HOME_ORIGIN: config.homeOrigin, BACKUP_ORIGIN: config.backupOrigin ?? "", BACKUP_ENABLED: env.BACKUP_ENABLED }
+    vars: { SCHEDULE_ENABLED: "true", PUBLIC_ORIGIN: config.publicOrigin, HOME_ORIGIN: config.homeOrigin, BACKUP_ORIGIN: config.backupOrigin ?? "", BACKUP_ENABLED: env.BACKUP_ENABLED }
   }, null, 2), { mode: 0o600 });
   const secrets: Record<string, string> = {
+    OPS_READ_TOKEN: env.OPS_READ_TOKEN,
     HOME_ACCESS_CLIENT_ID: env.HOME_ACCESS_CLIENT_ID,
     HOME_ACCESS_CLIENT_SECRET: env.HOME_ACCESS_CLIENT_SECRET
   };
