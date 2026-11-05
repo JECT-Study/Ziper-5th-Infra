@@ -1,0 +1,128 @@
+name: Deploy home manually
+on:
+  workflow_call:
+    inputs:
+      infra_sha:
+        type: string
+        required: true
+    secrets:
+      ZIPER_SSH_KNOWN_HOSTS_B64:
+        required: false
+      ZIPER_CI_SSH_KEY:
+        required: false
+      CF_ACCESS_CLIENT_ID:
+        required: true
+      CF_ACCESS_CLIENT_SECRET:
+        required: true
+      DISCORD_DEPLOY_WEBHOOK_URL:
+        required: false
+permissions:
+  contents: read
+  actions: read
+jobs:
+  deploy:
+    if: github.repository == 'JECT-Study/Ziper-5th-Server' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    environment: production
+    timeout-minutes: 25
+    outputs:
+      deferred: ${{ steps.window.outputs.deferred }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: JECT-Study/Ziper-5th-Infra
+          ref: ${{ inputs.infra_sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: '24'
+      - run: npm ci
+      - id: window
+        run: node scripts/deployment-window.ts
+      - name: Require successful CI for exact source and infrastructure commits
+        if: steps.window.outputs.deferred != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          INFRA_SHA: ${{ inputs.infra_sha }}
+        run: |
+          set -euo pipefail
+          [[ "$INFRA_SHA" =~ ^[0-9a-f]{40}$ ]]
+          for specification in "$GITHUB_REPOSITORY:$GITHUB_SHA" "JECT-Study/Ziper-5th-Infra:$INFRA_SHA"; do
+            repository=${specification%:*}
+            commit=${specification##*:}
+            count=$(gh api --method GET "repos/$repository/actions/workflows/ci.yml/runs" -f head_sha="$commit" -f branch=main -f event=push -f status=success --jq '.workflow_runs | length')
+            test "$count" -gt 0
+          done
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        if: steps.window.outputs.deferred != 'true'
+        with:
+          ref: ${{ github.sha }}
+          path: server
+          persist-credentials: false
+      - name: Download tested release artifact
+        if: steps.window.outputs.deferred != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          run_id=$(gh api --method GET "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs" -f head_sha="$GITHUB_SHA" -f branch=main -f event=push -f status=success --jq '.workflow_runs[0].id')
+          gh run download "$run_id" --repo "$GITHUB_REPOSITORY" --name tested-release --dir server/build
+      - name: Package tested image
+        if: steps.window.outputs.deferred != 'true'
+        run: python3 scripts/package-home-release.py "$GITHUB_SHA"
+      - name: Install pinned cloudflared
+        if: steps.window.outputs.deferred != 'true'
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location --output "$RUNNER_TEMP/cloudflared" "https://github.com/cloudflare/cloudflared/releases/download/2026.10.7/cloudflared-linux-amd64"
+          test -n "$CLOUDFLARED_SHA256"
+          printf '%s  %s\n' "$CLOUDFLARED_SHA256" "$RUNNER_TEMP/cloudflared" | sha256sum --check
+          chmod 700 "$RUNNER_TEMP/cloudflared"
+        env:
+          CLOUDFLARED_SHA256: 1f99fb518b83dec2ba8d870a7cc991d82a77e6196295a3d2754ba17ab9f91872
+      - name: Deliver immutable release through restricted SSH receiver
+        if: steps.window.outputs.deferred != 'true'
+        env:
+          CI_KEY: ${{ secrets.ZIPER_CI_SSH_KEY }}
+          TUNNEL_SERVICE_TOKEN_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+          TUNNEL_SERVICE_TOKEN_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+          SSH_USER: ${{ vars.ZIPER_SSH_USER }}
+          SSH_KNOWN_HOSTS_B64: ${{ secrets.ZIPER_SSH_KNOWN_HOSTS_B64 }}
+        run: |
+          set -euo pipefail
+          umask 077
+          test -n "$CI_KEY"
+          printf '%s\n' "$CI_KEY" > "$RUNNER_TEMP/ziper-key"
+          printf '%s' "$SSH_KNOWN_HOSTS_B64" | base64 --decode > "$RUNNER_TEMP/ziper-known-hosts"
+          test -n "$SSH_USER"
+          test -n "$SSH_KNOWN_HOSTS_B64"
+          connection=(ssh -T -o BatchMode=yes -o StrictHostKeyChecking=yes -o "UserKnownHostsFile=$RUNNER_TEMP/ziper-known-hosts" -o "ProxyCommand=$RUNNER_TEMP/cloudflared access ssh --hostname ssh.joonamin.dev" -i "$RUNNER_TEMP/ziper-key" "$SSH_USER@ssh.joonamin.dev")
+          "${connection[@]}" check
+          "${connection[@]}" "deploy $GITHUB_SHA" < dist/home-release.tgz
+      - name: Verify public readiness
+        if: steps.window.outputs.deferred != 'true'
+        run: python3 server/scripts/verify-public-health.py --url https://api-ziper.joonamin.dev
+      - if: always()
+        name: Remove temporary SSH credentials
+        run: rm -f "$RUNNER_TEMP/ziper-key" "$RUNNER_TEMP/ziper-known-hosts"
+  notify:
+    needs: deploy
+    if: always() && github.repository == 'JECT-Study/Ziper-5th-Server' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    environment: production
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: JECT-Study/Ziper-5th-Infra
+          ref: ${{ inputs.infra_sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: '24'
+      - run: npm ci
+      - run: node scripts/notify-discord.ts
+        env:
+          DISCORD_DEPLOY_WEBHOOK_URL: ${{ secrets.DISCORD_DEPLOY_WEBHOOK_URL }}
+          SOURCE_SHA: ${{ github.sha }}
+          DEPLOY_RESULT: ${{ needs.deploy.outputs.deferred == 'true' && 'deferred' || needs.deploy.result == 'success' && 'success' || 'failure' }}

@@ -1,0 +1,51 @@
+name: ziper-production
+services:
+  app:
+    image: ${ZIPER_IMAGE:?Supply the verified release image}
+    pull_policy: never
+    restart: unless-stopped
+    env_file:
+      - ${ZIPER_PRIVATE_DIR:?Supply the private configuration directory}/runtime.env
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      APP_RUNTIME_MODE: server
+      SWAGGER_ENABLED: 'false'
+      PORT: '8080'
+      SENTRY_ENVIRONMENT: prod
+      SENTRY_RELEASE: ${ZIPER_VERSION:?Supply the source commit}
+      APP_MONITORING_METRICS_ENABLED: 'true'
+      APP_MONITORING_ORIGIN: home
+      JAVA_TOOL_OPTIONS: '-XX:MaxRAMPercentage=70'
+    ports:
+      - '127.0.0.1:${ZIPER_HTTP_PORT:-18081}:8080'
+    volumes:
+      - ${ZIPER_PRIVATE_DIR}/db-ca.pem:/run/ziper/db-ca.pem:ro
+    read_only: true
+    tmpfs:
+      - /tmp:size=134217728,mode=1777
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 1g
+    cpus: 1.0
+    stop_grace_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
+  cloudflared:
+    image: cloudflare/cloudflared@sha256:4955524aeaa379e154023d5a027c250f7b35041a2e7e950cf13f144bc9b9c5ba
+    command: [tunnel, --no-autoupdate, run, --token-file, /run/secrets/tunnel-token]
+    restart: unless-stopped
+    volumes:
+      - ${ZIPER_PRIVATE_DIR}/cloudflared-token:/run/secrets/tunnel-token:ro
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    mem_limit: 128m
+    cpus: 0.5
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'

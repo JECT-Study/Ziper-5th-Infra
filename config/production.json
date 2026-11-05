@@ -1,0 +1,9 @@
+{
+  "homeSchedule": {
+    "timeZone": "Asia/Seoul",
+    "start": "03:00",
+    "end": "06:00",
+    "deploySafetyMinutes": 30
+  },
+  "monthlyBudgetUsd": 1
+}
