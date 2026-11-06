@@ -1,5 +1,5 @@
 {
-  "checkedAt": "2026-11-06T22:09:40.781322+00:00",
+  "checkedAt": "2026-11-06T22:39:31.202416+00:00",
   "productionE2eComplete": false,
   "sourceMain": "03f60eeb6206da1b4cd0aa9f05f75f03510e485a",
   "infraRuntimePin": "bcc852e5884bbb0d22f8fd651984441faafcd734",
@@ -28,13 +28,13 @@
     "credentialsMatchReference": true,
     "cloudflareChallenge": true,
     "exactProviderRuleIdentified": false,
-    "requires": "Authenticated Cloudflare administrative session to inspect Security Events"
+    "requires": "Read-only security API diagnosis pending; administrative session or a dedicated credential may still be needed"
   },
   "tests": {
-    "latestLocalTotal": 101,
+    "latestLocalTotal": 103,
     "workers": 32,
     "node": 10,
-    "python": 59,
+    "python": 61,
     "runtimePinCiTotal": 99,
     "nestedDockerRestartProofSeparate": true
   },
