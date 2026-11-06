@@ -1,0 +1,42 @@
+{
+  "checkedAt": "2026-11-06T22:09:40.781322+00:00",
+  "productionE2eComplete": false,
+  "sourceMain": "03f60eeb6206da1b4cd0aa9f05f75f03510e485a",
+  "infraRuntimePin": "bcc852e5884bbb0d22f8fd651984441faafcd734",
+  "sourceMainCiSuccessful": true,
+  "existingHomeRelease": "263558f6f2cf97ad717f71335c95c49214ae908c",
+  "existingHomePublicHealth": {
+    "ok": true,
+    "consecutiveSuccesses": 3,
+    "scope": "Existing release; no Worker routing"
+  },
+  "newHomeRegistryDeploymentPerformed": false,
+  "cloudRunServicePresent": false,
+  "workerDeploymentPerformedByThisRun": false,
+  "faultInjectionPerformed": false,
+  "failoverWithin600Seconds": null,
+  "halfOpenAndRecoveryOperationallyVerified": false,
+  "fullDeploymentIdempotenceVerified": false,
+  "deferredDiscordAcknowledgementsVerified": true,
+  "pairedDeploymentSuccessDiscordVerified": false,
+  "sentryZiperUptimeRegistered": false,
+  "recoveryTimerActive": true,
+  "unresolvedRecoveryLease": false,
+  "blocker": {
+    "category": "cloudflare_challenge",
+    "httpStatus": 403,
+    "credentialsMatchReference": true,
+    "cloudflareChallenge": true,
+    "exactProviderRuleIdentified": false,
+    "requires": "Authenticated Cloudflare administrative session to inspect Security Events"
+  },
+  "tests": {
+    "latestLocalTotal": 101,
+    "workers": 32,
+    "node": 10,
+    "python": 59,
+    "runtimePinCiTotal": 99,
+    "nestedDockerRestartProofSeparate": true
+  },
+  "scope": "Receipts refer to observations at their individual timestamps. CI and preparation are not production deployment or fault E2E."
+}

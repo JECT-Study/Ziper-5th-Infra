@@ -1,0 +1,14 @@
+{
+  "checkedAt": "2026-11-06T21:14:12.981501+00:00",
+  "scope": "Restored existing release before GHCR rollout; not new deployment proof",
+  "checks": {
+    "protectedUnauthenticated": {
+      "status": 403
+    },
+    "protectedServiceToken": {
+      "status": 200,
+      "upOnly": true,
+      "release": "263558f6f2cf97ad717f71335c95c49214ae908c"
+    }
+  }
+}

@@ -5,6 +5,7 @@ from pathlib import Path
 import tempfile
 from types import SimpleNamespace
 import unittest
+from unittest.mock import patch
 
 
 def load(name, path):
@@ -17,8 +18,54 @@ def load(name, path):
 ROOT = Path(__file__).resolve().parents[1]
 recovery = load('recovery', ROOT / 'deployment/home/recovery.py')
 observer = load('observer', ROOT / 'scripts/observe-production-e2e.py')
+boundaries = load('boundaries', ROOT / 'scripts/verify-production-boundaries.py')
 VERSION = 'a' * 40
 CONTAINER = 'b' * 64
+
+
+class BoundaryReceiptTests(unittest.TestCase):
+    def request(self, body, *, ops=True, headers=None):
+        class Response:
+            status = 200
+
+            def __init__(self):
+                self.headers = headers or {}
+
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return False
+
+            def read(self, limit):
+                return json.dumps(body).encode()[:limit]
+
+        with patch.object(boundaries.urllib.request, 'build_opener', return_value=SimpleNamespace(open=lambda *a, **kw: Response())):
+            return boundaries.request('https://api.example.test/readyz', ops=ops)
+
+    def test_ops_receipt_accepts_only_fixed_modes_and_reasons(self):
+        for mode, reason in [('CLOSED', 'home'), ('OPEN', 'circuit_backup'), ('HALF_OPEN', 'scheduled_backup')]:
+            receipt = self.request({'state': {'mode': {'kind': mode}}, 'reason': reason})
+            self.assertEqual(receipt['mode'], mode)
+            self.assertEqual(receipt['reason'], reason)
+        for mode, reason in [('CLOSED', 'fixture-private-marker'), ('fixture-private-marker', 'home'),
+                             (None, 'home'), ('OPEN', {'value': 'fixture-private-marker'})]:
+            with self.subTest(mode=mode, reason=reason):
+                receipt = self.request({'state': {'mode': {'kind': mode}}, 'reason': reason})
+                self.assertIsNone(receipt['status'])
+                self.assertNotIn('fixture-private-marker', json.dumps(receipt))
+
+    def test_health_receipt_does_not_copy_unexpected_body_or_header_values(self):
+        marker = 'fixture-private-marker'
+        receipt = self.request({'status': 'UP', 'unexpected': marker}, ops=False, headers={
+            'X-Ziper-Release': marker, 'X-Ziper-Origin': marker, 'CF-Access-Client-Secret': marker,
+            'Cache-Control': 'no-cache, no-store, max-age=0'})
+        self.assertFalse(receipt['upOnly'])
+        self.assertTrue(receipt['noStore'])
+        self.assertTrue(receipt['privateCredentialHeaderPresent'])
+        self.assertIsNone(receipt['release'])
+        self.assertIsNone(receipt['origin'])
+        self.assertNotIn(marker, json.dumps(receipt))
 
 
 class Docker:

@@ -1,0 +1,23 @@
+{
+  "observedWindowsBootAt": "2026-11-06T21:00:10.5000000Z",
+  "ubuntuAlreadyRunningBeforeOperatorWslExecution": true,
+  "containersAutomaticallyResumed": false,
+  "existingRestartPolicy": "unless-stopped",
+  "operatorStartedOnlyRecordedAppAndDedicatedTunnel": true,
+  "recordedRelease": "263558f6f2cf97ad717f71335c95c49214ae908c",
+  "firstObservedHealthy": {
+    "at": "2026-11-06T21:10:55.275159+00:00",
+    "public": {
+      "status": 200,
+      "origin": "home",
+      "release": "263558f6f2cf97ad717f71335c95c49214ae908c",
+      "upOnly": true,
+      "noStore": true,
+      "cached": false,
+      "sessionCookie": false
+    },
+    "sshStartedByObserver": false
+  },
+  "newAlwaysPolicyWholeHomeBootVerified": false,
+  "scope": "Existing release restored after 06; next physical boot of corrected policy remains untested"
+}

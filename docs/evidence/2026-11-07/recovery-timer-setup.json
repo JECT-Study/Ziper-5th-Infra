@@ -1,0 +1,25 @@
+{
+  "checkedAt": "2026-11-06T21:22:42.238603+00:00",
+  "check": {
+    "result": "checked",
+    "containerId": "373a81a6ea78adda683d5488531c0a8e45013727fa038f4f1f026d4c1afd7eb9",
+    "running": true,
+    "version": "263558f6f2cf97ad717f71335c95c49214ae908c",
+    "project": "ziper-production",
+    "service": "app"
+  },
+  "timerEnabled": true,
+  "timerState": [
+    "ActiveState=active",
+    "NextElapseUSecRealtime=Sat 2026-11-07 06:23:00 KST"
+  ],
+  "harmlessLease": {
+    "result": "armed",
+    "testId": "scheduler_probe_20261107",
+    "containerId": "373a81a6ea78adda683d5488531c0a8e45013727fa038f4f1f026d4c1afd7eb9",
+    "version": "263558f6f2cf97ad717f71335c95c49214ae908c",
+    "createdAt": 1794000162.1934896,
+    "expiresAt": 1794000162.1934896
+  },
+  "independentTickVerified": false
+}

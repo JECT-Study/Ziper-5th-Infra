@@ -1,0 +1,36 @@
+{
+  "checkedAt": "2026-11-06T22:03:17.716242+00:00",
+  "containers": [
+    {
+      "containerId": "373a81a6ea78adda683d5488531c0a8e45013727fa038f4f1f026d4c1afd7eb9",
+      "running": true,
+      "restartPolicy": "unless-stopped",
+      "project": "ziper-production",
+      "service": "app"
+    },
+    {
+      "containerId": "b1d8fddb7e17ce1d16899460e858ce9152e2c6fedd5420e601a09b6e3b300898",
+      "running": true,
+      "restartPolicy": "unless-stopped",
+      "project": "ziper-production",
+      "service": "cloudflared"
+    }
+  ],
+  "recoveryStatus": {
+    "lease": null,
+    "lastResult": {
+      "result": "already_running",
+      "testId": "scheduler_probe_20261107",
+      "containerId": "373a81a6ea78adda683d5488531c0a8e45013727fa038f4f1f026d4c1afd7eb9",
+      "version": "263558f6f2cf97ad717f71335c95c49214ae908c",
+      "at": 1794000180.681555
+    },
+    "containerId": "373a81a6ea78adda683d5488531c0a8e45013727fa038f4f1f026d4c1afd7eb9",
+    "running": true,
+    "version": "263558f6f2cf97ad717f71335c95c49214ae908c",
+    "project": "ziper-production",
+    "service": "app"
+  },
+  "recoveryTimerActive": true,
+  "scope": "Read only; original release; no stop/start or deployment performed"
+}

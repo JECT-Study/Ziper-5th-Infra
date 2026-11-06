@@ -1,0 +1,12 @@
+{
+  "runUrl": "https://github.com/JECT-Study/Ziper-5th-Infra/actions/runs/42299255234",
+  "infraSha": "bb929769d23b60ca2990812c6a2f80e22b444d53",
+  "runtimeChanged": false,
+  "report": {
+    "checkedAt": "2026-11-06T21:45:57.150Z",
+    "stage": "response",
+    "status": 403,
+    "ok": false
+  },
+  "scope": "Read-only preflight. A 403 alone does not distinguish Access from WAF. Local requests with the same stored pair returned 200."
+}

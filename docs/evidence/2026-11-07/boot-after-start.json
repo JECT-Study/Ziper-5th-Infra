@@ -1,0 +1,9 @@
+{
+  "checkedAt": "2026-11-06T21:05:15.7815847Z",
+  "lastWindowsBootAt": "2026-11-06T21:00:10.5000000Z",
+  "ubuntuAlreadyRunning": true,
+  "matchingTasks": [],
+  "distributionLaunchAttempted": false,
+  "sshReadSucceeded": true,
+  "scope": "Windows metadata before any operator WSL execution; proves Ubuntu was already running, not application readiness."
+}

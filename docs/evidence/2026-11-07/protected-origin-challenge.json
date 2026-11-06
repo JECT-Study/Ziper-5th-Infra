@@ -1,0 +1,18 @@
+{
+  "runUrl": "https://github.com/JECT-Study/Ziper-5th-Infra/actions/runs/42300183067",
+  "infraSha": "bcc852e5884bbb0d22f8fd651984441faafcd734",
+  "runtimeChanged": false,
+  "report": {
+    "checkedAt": "2026-11-06T21:52:35.406Z",
+    "credentialIdPresent": true,
+    "credentialSecretPresent": true,
+    "expectedCredentialChecksumPresent": true,
+    "credentialsMatchExpected": true,
+    "stage": "response",
+    "status": 403,
+    "ok": false,
+    "cloudflareChallenge": true,
+    "cloudflareErrorCode": null
+  },
+  "scope": "Credentials equal the separately registered known-working reference. Cloudflare cf-mitigated challenge identifies a challenge response. Exact responsible provider rule is not yet identified."
+}

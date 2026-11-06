@@ -6,6 +6,10 @@
 
 실패 artifact `home-origin-health`에는 자격의 존재·일치 여부, HTTP 상태, `cf-mitigated: challenge` 여부와 검증된 Cloudflare 오류 코드만 남긴다. 본문은 최대 4096바이트만 읽어 `error code:` 또는 `cf-error-code` 표식의 1010·1015·1016·1020·1033·1101·1102만 추출하고 원문은 저장하지 않는다. 코드가 없다는 사실로 Access 또는 WAF 원인을 확정하지 않는다. 실제 배포 전 같은 main의 `verify-cloudflare.yml`을 수동 실행해 읽기 전용으로 진단할 수 있다.
 
+현재 실제 차단과 이어서 실행할 조건은 [2026-11-07 walkthrough](nightly-walkthrough-2026-11-07.md)에 둔다. `scripts/verify-production-boundaries.py`는 실제 Worker·Cloud Run 배포 뒤 `--release`·`--expected-origin`·`--backup-origin`·`--output`을 지정해 읽기 전용으로 실행한다. 로컬 private 파일의 JWT·ops token은 메모리에서만 사용하고 유효/잘못된 JWT 전달, upstream 헤더 위조 시 정상 응답·비밀 헤더 응답 노출 없음, ops GET 인증·POST 거부, 직접 origin 비공개 경계를 검사한다. 업무 데이터 쓰기·다른 구성원 계정·부하 검사가 아니며 준비만 된 스크립트를 운영 통과로 기록하지 않는다.
+
+Infra main의 현재 리뷰 예외는 [ADR0010](adr/0010-owner-only-review-bypass.md)을 따른다. 관리자 강제는 켜고 PR allowance의 사용자만 joonamin으로 지정한다. 설정 원본 `config/github-main-review.json`의 review 부분은 GitHub의 required_pull_request_reviews PATCH, 관리자 강제는 enforce_admins POST로 적용하며 변경 후 status check·push 제한·별도 이력 ruleset도 재조회한다. Source 보호 설정은 이 구성의 대상이 아니다.
+
 ## GHCR 홈 이미지 전달
 
 새 deploy-home workflow는 publish → deploy → notify로 나눈다. publish는 packages:write로 tested-release 이미지를 GHCR의 source SHA tag에 발행하고 registry-release artifact를 만든다. 기존 tag는 digest를 조회해 JAR·소스 번들 검증 후 재사용하며 덮어쓰지 않는다. 404 이외의 registry 조회 오류는 중단한다. repo 이름은 ghcr.io/ject-study/ziper-server로 고정한다.
@@ -81,7 +85,7 @@ Server 저장소 production 환경은 main만 허용하도록 생성·조회 확
 
 ## main 보호와 수동 홈 배포 준비
 
-전체 경로의 CODEOWNERS는 @joonamin이다. 현재 main 보호는 사용자 요청에 따라 관리자 bypass를 허용한다. force push·삭제는 금지하고 일반 PR에는 승인·check·대화 해결·최신 push 승인을 요구한다. push/merge 가능한 사용자는 joonamin으로 한정한다. CODEOWNERS는 Infra PR #1의 main 병합으로 활성화됐다. 최초 연결에서는 CI 통과 후 사용자가 허용한 관리자 bypass로 병합했으며 이를 사람의 리뷰 승인으로 기록하지 않는다. 정책과 한계는 [ADR 0003](adr/0003-owner-review-and-admin-bypass.md)을 따른다.
+전체 경로의 CODEOWNERS는 @joonamin이다. 현재 Infra main은 관리자에게도 보호를 강제하고 PR allowance는 joonamin 개인에게만 둔다. force push·삭제는 금지하고 승인·check·대화 해결·최신 push 승인과 push/merge 사용자 joonamin 제한을 유지한다. 개인 PR 예외를 사용해도 CI 통과 후 병합하며 이를 사람의 리뷰 승인으로 기록하지 않는다. 현재 정책과 한계는 [ADR0010](adr/0010-owner-only-review-bypass.md)을 따른다. CODEOWNERS는 PR #1의 main 병합으로 활성화됐으며, 최초 연결의 관리자 전체 bypass는 [ADR0003](adr/0003-owner-review-and-admin-bypass.md)의 과거 정책이다.
 
 Infra main의 force push·삭제는 bypass 대상이 없는 별도 ruleset `26637239`로도 차단한다. PR 리뷰 bypass와 이력 보호를 분리하며 원본은 `config/github-main-history.json`에 둔다. 관리자가 ruleset 설정 자체를 바꾸는 권한까지 제한한 것은 아니다.
 

@@ -1,0 +1,9 @@
+{
+  "checkedAt": "2026-11-06T19:52:20.873035+00:00",
+  "databaseHostCategory": "supabase_pooler",
+  "port": 5432,
+  "sslVerifyFull": true,
+  "caConfigured": true,
+  "noConnectionValuesRecorded": true,
+  "scope": "Private configuration metadata only; Cloud Run network and DB readiness still require actual runtime validation."
+}

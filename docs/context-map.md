@@ -8,6 +8,7 @@
 | [운영](operations.md) | 배포 전제·비밀 관리·장애 대응 | Worker 설정, 워크플로, 운영 절차 |
 | [검증](verification.md) | 판정 조건과 실제 확인 범위 | 검사 실행, 운영 증거 추가 |
 | [Nightly walkthrough](nightly-walkthrough-2026-11-06.md) | 2026-11-06 인계와 실환경 판정 | 실제 실행 결과와 추가 준비 사항 |
+| [2026-11-07 nightly walkthrough](nightly-walkthrough-2026-11-07.md) | GHCR·WIF 준비, 06시 복귀와 실제 challenge 차단 | 실제 준비·배포·장애 실험의 범위를 구분하고 다음 실행 조건 반영 |
 
 ## 결정 이력
 
@@ -26,3 +27,5 @@
 이번 운영 준비의 [계획](evidence/2026-11-07/plan.md)과 [결정 로그](evidence/2026-11-07/decisions.tsv)는 실제 실행 증거를 추가하며 유지합니다.
 
 - [0009 예약 종료 후 기존 컨테이너 재기동](adr/0009-resume-after-scheduled-boot.md)
+
+- [0010 Infra 소유자 개인의 PR 리뷰 예외](adr/0010-owner-only-review-bypass.md)

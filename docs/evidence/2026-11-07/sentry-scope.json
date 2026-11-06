@@ -1,0 +1,27 @@
+{
+  "checkedAt": "2026-11-06T19:44:55.095104+00:00",
+  "organization": "joonamin-project",
+  "plan": "Sponsored Team",
+  "scheduledDeveloperDate": "2027-10-18",
+  "payAsYouGoLimitUsd": 0,
+  "uptimeIncluded": 1,
+  "uptimeUsed": 1,
+  "existingIncludedMonitor": "tocktock; unchanged",
+  "ziperRegisteredUptimeMonitors": 0,
+  "ziperUptimeCreated": false,
+  "openTeamMembership": false,
+  "openTeamMembershipFreshReloadVerified": true,
+  "scope": "Sentry authenticated UI read; no billing change, monitor deletion or paid activation. Draft is not a running monitor.",
+  "projectTeams": {
+    "ziper": [
+      "ziper-server"
+    ],
+    "fakedev": [
+      "client",
+      "server"
+    ]
+  },
+  "projectsPublic": false,
+  "teamSource": "Authenticated GET /api/0/organizations/joonamin-project/teams/?detailed=1",
+  "memberAccountAccessE2E": "NOT_VERIFIED; invitation list pending"
+}
