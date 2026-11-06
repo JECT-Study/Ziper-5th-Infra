@@ -13,13 +13,44 @@ test -s "$root/private/runtime.env"
 test -s "$root/private/db-ca.pem"
 test -s "$root/private/cloudflared-token"
 
-exec 9>"$root/deploy.lock"
+if [ -n "${ZIPER_DEPLOY_LOCK_FD:-}" ]; then
+    [[ "$ZIPER_DEPLOY_LOCK_FD" =~ ^[0-9]+$ ]] && [ "$ZIPER_DEPLOY_LOCK_FD" -gt 2 ] || {
+        echo 'Invalid deployment lock descriptor' >&2; exit 1;
+    }
+    exec 9<&"$ZIPER_DEPLOY_LOCK_FD"
+    python3 - "$root/deploy.lock" <<'PY'
+import os, stat, sys
+try:
+    expected, actual = os.stat(sys.argv[1]), os.fstat(9)
+    valid = stat.S_ISREG(actual.st_mode) and (expected.st_dev, expected.st_ino) == (actual.st_dev, actual.st_ino)
+except OSError:
+    valid = False
+if not valid:
+    raise SystemExit('Deployment lock descriptor does not match the deployment lock')
+PY
+else
+    exec 9>"$root/deploy.lock"
+fi
 flock -n 9 || { echo 'Another Ziper deployment is active' >&2; exit 1; }
 unset COMPOSE_FILE COMPOSE_PROJECT_NAME COMPOSE_PROFILES
 unset ZIPER_IMAGE ZIPER_VERSION ZIPER_PRIVATE_DIR SENTRY_RELEASE
 export ZIPER_PRIVATE_DIR="$root/private"
 export DOCKER_CONFIG="$root/docker-client"
 test -s "$DOCKER_CONFIG/config.json"
+
+runtime_window() {
+    python3 - "$root" <<'PY'
+from pathlib import Path
+import sys
+root = Path(sys.argv[1])
+sys.path.insert(0, str(root / 'ci'))
+from registry_release import ensure_runtime_window
+ensure_runtime_window(root)
+PY
+}
+
+# Receiver download/validation may have crossed the deployment cutoff.
+runtime_window
 
 select_release() {
     local selected=$1 expected actual
@@ -51,18 +82,16 @@ if [ -f "$root/current-version" ]; then
 fi
 select_release "$version"
 compose config --quiet
-if compose up -d --no-build --pull never app && ready; then
-    compose up -d --no-build cloudflared
+if compose up -d --no-build --pull never app && ready && runtime_window && compose up -d --no-build cloudflared; then
     printf '%s\n' "$version" > "$root/current-version.next"
     mv "$root/current-version.next" "$root/current-version"
     printf 'Ziper release %s is ready; verify the public endpoint separately.\n' "$version"
     exit 0
 fi
 
-echo 'Ziper deployment failed readiness verification' >&2
-if [ -n "$previous" ] && [ "$previous" != "$version" ]; then
-    select_release "$previous"
-    if compose up -d --no-build --pull never app && ready; then
+echo 'Ziper deployment failed app readiness or tunnel startup' >&2
+if [ -n "$previous" ]; then
+    if select_release "$previous" && compose up -d --no-build --pull never app && ready && compose up -d --no-build cloudflared; then
         echo 'The preceding Ziper release was restored' >&2
     else
         echo 'The preceding release did not recover; operator action is required' >&2

@@ -35,6 +35,10 @@ def main():
         report['payloadBytes'] = len(payload)
         result = subprocess.run(connection + ['deploy-registry ' + version], input=payload,
                                 capture_output=True, timeout=900)
+        if result.returncode == 75 and b'ZIPER_DEPLOY_DEFERRED' in result.stdout:
+            report['result'] = 'deferred'
+            report['checks']['runtimeDeferred'] = True
+            return write_report(report)
         if result.returncode:
             report['receiverExitCode'] = result.returncode
             known_failures = {
@@ -44,7 +48,7 @@ def main():
                 b'Pulled image config differs from manifest': 'image_config_mismatch',
                 b'Pulled image JAR differs from tested artifact': 'tested_jar_mismatch',
                 b'Unsupported receiver command': 'receiver_not_installed',
-                b'Ziper deployment failed readiness verification': 'home_readiness',
+                b'Ziper deployment failed app readiness or tunnel startup': 'home_activation',
             }
             report['receiverFailure'] = next((code for text, code in known_failures.items()
                                                if text in result.stderr), 'ssh_or_receiver_failure')
@@ -56,11 +60,18 @@ def main():
         report['result'] = 'passed'
     except (OSError, subprocess.TimeoutExpired, ValueError):
         pass
+    write_report(report)
+    if report['result'] != 'passed':
+        raise SystemExit('Restricted registry deployment failed; inspect host state before retrying')
+
+
+def write_report(report):
     Path('dist').mkdir(exist_ok=True)
     Path('dist/receiver-control-proof.json').write_text(json.dumps(report, indent=2) + '\n')
     print(json.dumps(report))
-    if report['result'] != 'passed':
-        raise SystemExit('Restricted registry deployment failed; inspect host state before retrying')
+    if output := os.environ.get('GITHUB_OUTPUT'):
+        with open(output, 'a') as stream:
+            stream.write('deferred=' + str(report['result'] == 'deferred').lower() + '\n')
 
 
 if __name__ == '__main__':

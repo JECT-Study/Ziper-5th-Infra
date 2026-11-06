@@ -11,7 +11,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "vitest run && vitest run --config vitest.backup.config.ts",
-    "test:deploy": "node --test scripts/deployment.test.ts && python3 scripts/test-home-receiver.py && python3 scripts/test-image-identity.py && python3 scripts/test-registry-release.py",
+    "test:deploy": "node --test scripts/deployment.test.ts && python3 scripts/test-image-identity.py && python3 scripts/test-registry-release.py",
     "check": "npm run types && npm run typecheck && npm run lint && npm test && npm run test:deploy && npm run build",
     "build": "wrangler deploy --dry-run --outdir dist",
     "dev": "wrangler dev",

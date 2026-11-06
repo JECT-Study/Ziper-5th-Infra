@@ -2,9 +2,31 @@
 import hashlib
 import json
 import re
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 
 REPOSITORY = 'ghcr.io/ject-study/ziper-server'
 DIGEST = r'sha256:[a-f0-9]{64}'
+
+
+def ensure_runtime_window(root, now=None):
+    try:
+        policy = json.loads((root / 'ci' / 'production.json').read_text())['homeSchedule']
+        start, end, safety = policy['start'], policy['end'], policy['deploySafetyMinutes']
+        if policy['timeZone'] != 'Asia/Seoul' or not isinstance(safety, int) or isinstance(safety, bool) or not 0 <= safety <= 120:
+            raise ValueError()
+        if any(not isinstance(value, str) or not re.fullmatch(r'(?:[01][0-9]|2[0-3]):[0-5][0-9]', value) for value in (start, end)) or start == end:
+            raise ValueError()
+        minute = lambda value: int(value[:2]) * 60 + int(value[3:])
+        beginning, ending = (minute(start) - safety) % 1440, minute(end)
+        current = (now or datetime.now(timezone.utc)).astimezone(ZoneInfo('Asia/Seoul'))
+        at = current.hour * 60 + current.minute
+        deferred = beginning <= at < ending if beginning < ending else at >= beginning or at < ending
+    except (KeyError, TypeError, ValueError, OSError):
+        raise SystemExit('Trusted deployment schedule is missing or invalid') from None
+    if deferred:
+        print('ZIPER_DEPLOY_DEFERRED', flush=True)
+        raise SystemExit(75)
 
 
 def file_sha256(path):

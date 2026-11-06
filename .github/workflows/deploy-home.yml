@@ -46,7 +46,6 @@ jobs:
       - id: window
         run: node scripts/deployment-window.ts
       - name: Require successful CI for exact source and infrastructure commits
-        if: steps.window.outputs.deferred != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           INFRA_SHA: ${{ inputs.infra_sha }}
@@ -60,13 +59,11 @@ jobs:
             test "$count" -gt 0
           done
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-        if: steps.window.outputs.deferred != 'true'
         with:
           ref: ${{ github.sha }}
           path: server
           persist-credentials: false
       - name: Download tested release artifact
-        if: steps.window.outputs.deferred != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -75,12 +72,10 @@ jobs:
           gh run download "$run_id" --repo "$GITHUB_REPOSITORY" --name tested-release --dir server/build
       - name: Publish or verify immutable GHCR release
         id: registry
-        if: steps.window.outputs.deferred != 'true'
         run: python3 scripts/publish-registry-release.py "$GITHUB_SHA"
         env:
           GHCR_TOKEN: ${{ github.token }}
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
-        if: steps.window.outputs.deferred != 'true'
         with:
           name: registry-release
           path: dist/registry-release.json
@@ -91,6 +86,8 @@ jobs:
     runs-on: ubuntu-24.04
     environment: production
     timeout-minutes: 20
+    outputs:
+      deferred: ${{ steps.window.outputs.deferred == 'true' && 'true' || steps.delivery.outputs.deferred }}
     permissions:
       contents: read
       actions: read
@@ -110,6 +107,10 @@ jobs:
         with:
           name: registry-release
           path: dist
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: '24'
+      - run: npm ci
       - name: Install pinned cloudflared
         run: |
           set -euo pipefail
@@ -119,7 +120,12 @@ jobs:
           chmod 700 "$RUNNER_TEMP/cloudflared"
         env:
           CLOUDFLARED_SHA256: 1f99fb518b83dec2ba8d870a7cc991d82a77e6196295a3d2754ba17ab9f91872
+      - name: Recheck schedule before home runtime mutation
+        id: window
+        run: node scripts/deployment-window.ts
       - name: Pull immutable GHCR release through restricted SSH receiver
+        id: delivery
+        if: steps.window.outputs.deferred != 'true'
         env:
           CI_KEY: ${{ secrets.ZIPER_CI_SSH_KEY }}
           TUNNEL_SERVICE_TOKEN_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
@@ -138,6 +144,7 @@ jobs:
           connection=(ssh -T -o BatchMode=yes -o StrictHostKeyChecking=yes -o "UserKnownHostsFile=$RUNNER_TEMP/ziper-known-hosts" -o "ProxyCommand=$RUNNER_TEMP/cloudflared access ssh --hostname ssh.joonamin.dev" -i "$RUNNER_TEMP/ziper-key" "$SSH_USER@ssh.joonamin.dev")
           python3 scripts/deliver-registry-release.py "${connection[@]}"
       - name: Verify public readiness
+        if: steps.window.outputs.deferred != 'true' && steps.delivery.outputs.deferred != 'true'
         run: >-
           timeout --signal=KILL 180s python3 server/scripts/verify-public-health.py
           --url https://api-ziper.joonamin.dev
@@ -185,4 +192,4 @@ jobs:
         env:
           DISCORD_DEPLOY_WEBHOOK_URL: ${{ secrets.DISCORD_DEPLOY_WEBHOOK_URL }}
           SOURCE_SHA: ${{ github.sha }}
-          DEPLOY_RESULT: ${{ needs.publish.outputs.deferred == 'true' && 'deferred' || needs.deploy.result == 'success' && 'success' || 'failure' }}
+          DEPLOY_RESULT: ${{ needs.publish.result != 'success' && 'failure' || (needs.publish.outputs.deferred == 'true' || needs.deploy.outputs.deferred == 'true') && 'deferred' || needs.deploy.result == 'success' && 'success' || 'failure' }}
