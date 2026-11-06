@@ -21,7 +21,7 @@ registry-release artifact에는 sourceSha·고정 repository·registry digest·O
 
 검증은 고유한 ziper-verification 임시 tag로 수행한다. 이미지 config·JAR 검증이 모두 통과한 뒤에만 공유 ziper-server:<source> tag를 지정한다. 수신기의 전체 작업과 trusted deploy.sh·복구는 공통 deploy.lock을 사용한다. 수신기는 열린 lock fd를 자식에게 pass_fds로 넘기며 deploy.sh는 fd의 device·inode가 해당 lock 파일인지 검증하고 같은 open-file description을 재사용해 중첩 잠금을 피한다.
 
-app readiness 이후 cloudflared 시작까지 모두 성공해야 current-version을 갱신한다. Tunnel 시작 실패도 동일 롤백 분기로 처리해 이전 runtime과 기록을 유지한다. 이전 release가 없는 최초 실패는 app을 중지하고 성공 기록을 만들지 않는다. 같은 release의 실패는 기존 app을 무조건 중지하지 않는다.
+app readiness·cloudflared 시작·current-version 원자적 기록까지 모두 성공해야 배포 성공으로 처리한다. Tunnel 시작이나 버전 기록 실패도 동일 롤백 분기로 처리해 이전 runtime과 기록을 유지한다. 이전 release가 없는 최초 실패는 app을 중지하고 성공 기록을 만들지 않는다. 같은 release의 실패는 기존 app을 무조건 중지하지 않는다.
 
 ## 대안
 

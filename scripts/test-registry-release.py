@@ -238,6 +238,34 @@ class RegistryTests(unittest.TestCase):
         self.assertFalse((f.root / 'current-version').exists())
         self.assertEqual((f.root / 'current-runtime').read_text(), 'stopped')
 
+    def test_release_record_write_failure_restores_previous_runtime_and_record(self):
+        f = self.fixture()
+        f.release(PREVIOUS, OLD_ID)
+        (f.root / 'current-version').write_text(PREVIOUS + '\n')
+        (f.root / 'current-runtime').write_text(PREVIOUS)
+        # A directory reliably rejects redirection, including when the test runs as root.
+        (f.root / 'current-version.next').mkdir()
+        with patch.dict(os.environ, f.env, clear=True), self.assertRaises(SystemExit) as error:
+            receiver.deploy_registry(VERSION, io.BytesIO(payload()), f.root)
+        self.assertEqual(error.exception.code, 1)
+        self.assertEqual((f.root / 'current-version').read_text(), PREVIOUS + '\n')
+        self.assertEqual((f.root / 'current-runtime').read_text(), PREVIOUS)
+        tunnel_starts = [Path(call['args'][call['args'].index('-f') + 1]).parent.name
+                         for call in f.calls() if call['args'][0] == 'compose'
+                         and 'up' in call['args'] and call['args'][-1] == 'cloudflared']
+        self.assertEqual(tunnel_starts, [VERSION, PREVIOUS])
+
+    def test_first_release_record_write_failure_stops_new_app_without_success_record(self):
+        f = self.fixture()
+        (f.root / 'current-version.next').mkdir()
+        with patch.dict(os.environ, f.env, clear=True), self.assertRaises(SystemExit) as error:
+            receiver.deploy_registry(VERSION, io.BytesIO(payload()), f.root)
+        self.assertEqual(error.exception.code, 1)
+        self.assertFalse((f.root / 'current-version').exists())
+        self.assertEqual((f.root / 'current-runtime').read_text(), 'stopped')
+        self.assertTrue(any(call['args'][0] == 'compose' and 'up' in call['args']
+                            and call['args'][-1] == 'cloudflared' for call in f.calls()))
+
     def test_same_release_tunnel_failure_does_not_stop_existing_app(self):
         f = self.fixture()
         f.release(VERSION, OLD_ID)

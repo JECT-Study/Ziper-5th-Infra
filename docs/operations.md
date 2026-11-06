@@ -105,7 +105,7 @@ Linux workflow는 `timeout --signal=KILL 180s`로 검사 프로세스 전체에�
 
 고유 verification tag에서 config·JAR를 검사하며, 실패한 metadata는 기존 release tag를 바꾸지 않는다. 수신기부터 deploy.sh까지 공통 deploy.lock을 유지한다. inherited fd의 inode를 확인하며 별도로 같은 lock을 다시 열어 교착시키지 않는다. 복구 작업도 같은 lock을 사용해야 한다.
 
-cloudflared 시작 실패도 app/readiness 실패와 같은 롤백으로 처리한다. 이전 runtime과 current-version을 보존하고 최초 실패는 app을 중지한다. 같은 release를 다시 실행하다 Tunnel 단계가 실패했다고 기존 app을 무조건 중지하지 않는다.
+cloudflared 시작이나 current-version 기록 실패도 app/readiness 실패와 같은 롤백으로 처리한다. 이전 runtime과 current-version을 보존하고 최초 실패는 app을 중지한다. 같은 release를 다시 실행하다 Tunnel 단계가 실패했다고 기존 app을 무조건 중지하지 않는다.
 
 보류 시간에도 GHCR 발행·재검증은 가능하지만 runtime 변경은 하지 않는다. publish 시작 당시와 home mutation 직전 workflow 시간을 구분하며 수신기도 production.json으로 재검사한다. pull 중 02:30 경계를 넘으면 release tag·컨테이너를 변경하지 않고 보류한다. 공개 readiness 단계는 보류 시 건너뛰고 Discord에도 보류를 전달한다. publish 자체가 실패했다면 보류 시간에도 실패 알림으로 기록한다.
 
