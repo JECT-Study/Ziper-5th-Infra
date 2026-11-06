@@ -1,6 +1,6 @@
 # 2026-11-07 nightly walkthrough
 
-[기계 판독 상태](evidence/2026-11-07/e2e-status.json)의 운영 E2E는 **미완료**다. 기존 홈 릴리스는 정상 응답하지만 GitHub Actions가 보호 origin에 접근하면 Cloudflare의 브라우저 challenge가 반환되어 쌍 배포가 사전 조건에서 중단된다. 새 Cloud Run runtime과 Worker를 배포하거나 장애를 주입하지 않았다. 로컬 검사·이미지 준비 성공을 운영 배포 성공으로 계산하지 않는다.
+[기계 판독 상태](evidence/2026-11-07/e2e-status.json)의 운영 E2E는 **미완료**다. 기존 홈 릴리스는 정상 응답하지만 GitHub Actions가 보호 origin에 접근하면 Cloudflare의 브라우저 challenge가 반환되어 쌍 배포가 사전 조건에서 중단된다. 새 Cloud Run runtime과 Worker를 배포하거나 장애를 주입하지 않았다. 기존 홈 두 컨테이너의 재기동 정책은 이미지 교체 없이 always로 실제 정합했고 반복 no-op과 공개 health를 확인했다. 로컬 검사·이미지 준비 성공을 운영 배포 성공으로 계산하지 않는다.
 
 이 문서·ADR·배포 구현·정제한 증거의 소유 위치는 **Ziper-5th-Infra**다. Server에는 앱·응답 계약·고정 SHA의 수동 workflow 진입점만 둔다. 원래 Server 작업 디렉터리의 사용자 수정은 보존하고 별도 worktree에서 작업했다. 실행별 최종 판정은 [Infra PR #1](https://github.com/JECT-Study/Ziper-5th-Infra/pull/1)에 연결한다.
 
@@ -12,13 +12,13 @@
 | --- | --- | --- |
 | GHCR 전달 방식 | CI의 tested JAR로 발행하고 홈은 exact manifest digest를 pull하도록 구현·병합 | [ADR0007](adr/0007-ghcr-home-delivery.md). 새 registry 경로의 실제 홈 앱 배포는 미실행 |
 | 같은 이미지 준비 반복 | Source `6df199895f35781dd47a43d2166e581a14e44f5c`의 두 수동 실행 성공, 동일 metadata 유지 | [preparation-repeat.json](evidence/2026-11-07/preparation-repeat.json). 종료 시간대 runtime은 보류, home job 생략 |
-| 최신 runtime 시도 | Source `1536b7d926953c4d3f32145a18e9e9cd632aa6f6`/Infra `bb929769d23b60ca2990812c6a2f80e22b444d53`의 발행·AR 미러 성공, 보호 origin403으로 중단 | [42296858319](https://github.com/JECT-Study/Ziper-5th-Server/actions/runs/42296858319), attempts1/2. Cloud Run deploy·home deploy 미실행 |
+| 최신 쌍 이미지 배포 시도 | Source `1536b7d926953c4d3f32145a18e9e9cd632aa6f6`/Infra `bb929769d23b60ca2990812c6a2f80e22b444d53`의 발행·AR 미러 성공, 보호 origin403으로 중단 | [42296858319](https://github.com/JECT-Study/Ziper-5th-Server/actions/runs/42296858319), attempts1/2. Cloud Run deploy·home deploy 미실행 |
 | Google 인증 | 실제 GitHub OIDC WIF와 AR 미러링 통과 | [preparation-latest.json](evidence/2026-11-07/preparation-latest.json). Cloud Run 앱 startup·DB 연결·Worker ID token 교환 증거와 별개 |
 | 비용 설정 | Cloud Run native cap 월 KRW1,000, CONFIGURED 조회 | [spend-cap.json](evidence/2026-11-07/spend-cap.json). 집계 지연·AR/Secrets 비용·실제 청구액·0원 보장은 검증하지 않음 |
 | Cloud Run runtime 존재 | 07:02 KST provider 조회에서 ziper-backup 서비스 없음 확인 | [cloud-run-runtime-scope.json](evidence/2026-11-07/cloud-run-runtime-scope.json). 준비한 Secret·이미지·IAM과 실행 중인 앱을 구분 |
-| 현재 홈 공개 health | 07:00 KST 무렵 `/livez`·`/readyz` 3쌍 연속 정상 | [home-public-health-current.json](evidence/2026-11-07/home-public-health-current.json). 200·리다이렉트 거부·JSON UP·no-store·쿠키/캐시·크기 계약을 실제 검사기로 확인. 기존263 릴리스이며 Worker 경로 아님 |
+| 현재 홈 공개 health | 08:18 KST `/livez`·`/readyz` 3쌍 연속 정상 | [home-public-health-after-policy.json](evidence/2026-11-07/home-public-health-after-policy.json). 200·리다이렉트 거부·JSON UP·no-store·쿠키/캐시·크기 계약을 실제 검사기로 확인. 기존263 릴리스이며 Worker 경로 아님 |
 | 06시 장비 복귀 | 설정된 BIOS 일정의 시간대에 Windows 부팅 시각과 이미 실행 중인 Ubuntu 확인. 기존 집어 app·전용 tunnel은 정지 상태여서 수동 복구 | [boot-recovery-scope.json](evidence/2026-11-07/boot-recovery-scope.json). 첫 정상 관측06:10:55 KST. BIOS가 원인이었음을 독립 검증하거나 자동 앱 복구·600초 SLA 성공으로 계산하지 않음 |
-| 재기동 정책 | 새 compose의 app·전용 tunnel을 restart: always로 변경, 격리 Docker29.6.2 daemon에서 차이 확인 | [ADR0009](adr/0009-resume-after-scheduled-boot.md), [restart-policy.json](evidence/2026-11-07/restart-policy.json). 현재 기존 릴리스는 unless-stopped. 새 정책의 다음 전체 BIOS 부팅 미검증 |
+| 재기동 정책 | 새 compose의 app·전용 tunnel을 restart: always로 변경, 격리 Docker29.6.2 daemon에서 차이 확인 | [ADR0009](adr/0009-resume-after-scheduled-boot.md), [restart-policy.json](evidence/2026-11-07/restart-policy.json), [실제 적용](evidence/2026-11-07/existing-restart-applied.json), [반복](evidence/2026-11-07/existing-restart-repeat.json). 기존263의 두 컨테이너에도 runtime always 적용·반복0건 확인. 다음 전체 BIOS 부팅 미검증 |
 | trusted control | 검토된 아홉 파일을 설치하고 해시 대조 | [home-control-installation.json](evidence/2026-11-07/home-control-installation.json). 배포 코드·timer 설치이며 새 앱 배포 성공 아님 |
 | 독립 복구 timer | 무해한 seconds0 lease 이후 다음 systemd tick이 already_running을 기록하고 lease 해소 | [recovery-timer-setup.json](evidence/2026-11-07/recovery-timer-setup.json), [proof](evidence/2026-11-07/recovery-timer-proof.json). 실제 정지 앱 복구는 미실험 |
 | Discord | 준비 보류 알림 두 건의 지정 채널·메시지 ID 확인 | [preparation-repeat.json](evidence/2026-11-07/preparation-repeat.json). 새 쌍 배포 성공 알림·사용자 클라이언트 표시·Sentry issue bot 알림은 별개 |
@@ -65,8 +65,10 @@ GitHub 조직의 Actions 추가 사용 예산0원 설정은 조회 권한이 없
 
 리뷰: gpt-6-astra가 진단 코드·정제된403 증거를 독립 검토하고 Node10개를 격리 실행했다. 자격 비교는 지정한 기준값과의 동일성만 증명하고, 본문 오류 코드는 원인 확정이 아니라 단서라는 제한을 확인했다. 다른 공급자 모델과 전체 transcript 경로는 제공되지 않았으므로 해당 범위의 교차 검토를 했다고 주장하지 않는다. 최종 기록은 [계획](evidence/2026-11-07/plan.md)·[결정 로그](evidence/2026-11-07/decisions.tsv)를 따른다.
 
-## 보안 API 후속 조회와 기존 재기동 정책의 적용 준비
+## 보안 API 후속 조회와 기존 재기동 정책의 실제 적용
 
 [실제 API 조회](evidence/2026-11-07/cloudflare-security-readback.json)는 기존 Worker token을 사용했습니다. zone·security_level·browser_check 조회는200, Bot 설정 조회는403, Security Events GraphQL은200 응답 안에서 authorization 거부였습니다. security_level=essentially_off·browser_check=on은 현재 설정이며 과거 challenge 원인을 확정하지 않습니다. 보안 이벤트를 읽을 관리 세션 또는 별도 읽기 자격이 필요합니다. 전용 토큰을 선택한다면 해당 계정 Account Analytics Read와 joonamin.dev Zone Read를 Infra production Secret CLOUDFLARE_SECURITY_API_TOKEN에 등록합니다. 기존 배포 token 권한은 확대하지 않습니다.
 
-새 이미지 배포와 독립적으로 기존 두 컨테이너의 정책만 정합하는 [ADR0011](adr/0011-reconcile-existing-restart-policy.md)과 [실제 읽기 계획](evidence/2026-11-07/existing-restart-plan.json)을 추가했습니다. 아직 이 계획의 적용은 CI 뒤 별도로 실행합니다. 기존 파일·시작 시각 보존과 반복 no-op을 확인한 뒤에만 적용 성공으로 기록합니다. trusted rollback은 과거 compose의 unless-stopped를 다시 적용할 수 있어 rollback 뒤 정책 readback도 필요합니다.
+새 이미지 배포와 독립적으로 기존 두 컨테이너의 정책만 정합하는 [ADR0011](adr/0011-reconcile-existing-restart-policy.md)과 [실제 읽기 계획](evidence/2026-11-07/existing-restart-plan.json)을 추가했습니다. Infra main317bba3a2758aea4d212ef8831e2b0f75a5b51b8의 CI42310352848(106개) 성공 뒤08:15 KST에 두 정책을 적용했습니다.08:17 반복은 변경0건이고 두 ID·StartedAt·참조 파일을 유지했습니다. 앱 이미지263은 교체하지 않았고08:18 strict 공개 health3쌍을 통과했습니다. trusted rollback은 과거 compose의 unless-stopped를 다시 적용할 수 있어 rollback 뒤 정책 readback도 필요합니다.
+
+마지막 실제 결과는 [적용](evidence/2026-11-07/existing-restart-applied.json), [무변경 반복](evidence/2026-11-07/existing-restart-repeat.json), [공개 health](evidence/2026-11-07/home-public-health-after-policy.json)로 대조합니다. 이 성공을 새 GHCR 앱 배포나 전체 장비 자동 부팅·Cloud Run600초 전환으로 승격하지 않습니다.

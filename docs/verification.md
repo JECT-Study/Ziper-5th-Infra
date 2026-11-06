@@ -136,3 +136,7 @@ Server 실행 [42250905425](https://github.com/JECT-Study/Ziper-5th-Server/actio
 통합 로컬 검사는 Worker26·backup6·Node1·이미지5·registry14·운영관측10·Cloud Run16, 총78개와 타입·린트·번들을 통과했다. 가짜 CLI와 HTTP fixture를 사용한 경계 검증이며 운영 발행·배포·600초 증거가 아니다. 별도 검토가 재현한 터널 실패 롤백 누락과 늦은 시간 가드를 수정하고 실제 deploy.sh fixture로 다시 확인했다.
 
 실제 설정에서 WIF ACTIVE와 main·production·저장소 숫자 ID 조건, AR 전용 저장소, 두 runtime Secret과 전용 계정을 조회했다. Cloud Run 앱 런타임과 Worker는 아직 반영하지 않았다. 03:00 이후 공개 두 probe의 530을 관측했으며 06시 이후의 새 코드 운영 E2E와 구분한다. 계획과 결정 이력은 [실행 계획](evidence/2026-11-07/plan.md), [결정 로그](evidence/2026-11-07/decisions.tsv)에 있다.
+
+## 2026-11-07 기존 컨테이너 정책 정합
+
+검토된 main317bba3와 CI42310352848 성공 뒤 실제 두 컨테이너를 always로 정합했습니다. 적용2건·반복0건 모두 ID·StartedAt·참조 파일을 보존했고 공개 health3쌍을 통과했습니다. [실제 적용](evidence/2026-11-07/existing-restart-applied.json)·[반복](evidence/2026-11-07/existing-restart-repeat.json)·[공개 검사](evidence/2026-11-07/home-public-health-after-policy.json)를 참조합니다. 새 앱·Cloud Run·Worker 배포와 fault E2E는 미완료입니다.
