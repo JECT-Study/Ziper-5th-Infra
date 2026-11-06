@@ -1,5 +1,11 @@
 # 운영
 
+## 보호 origin 사전 검사와 403 진단
+
+`verify-origin.ts`는 배포 변경 전에 `/readyz`를 5초 한도로 한 번 확인하며 200 이외에는 배포를 막는다. Accept `application/json`과 User-Agent `ziper-deployment-verification`을 명시한다. 자동 재배포나 인증 우회는 하지 않는다. 선택적인 production Secret `HOME_ACCESS_CREDENTIALS_SHA256`은 알려진 정상 Client ID, 줄바꿈 하나, Client Secret의 SHA-256이다. 비교값과 자격은 출력하지 않고 일치 여부만 기록하며 불일치하면 요청 전에 중단한다. 비밀 값을 바꿀 때 비교값도 같은 자격으로 갱신한다.
+
+실패 artifact `home-origin-health`에는 자격의 존재·일치 여부, HTTP 상태, `cf-mitigated: challenge` 여부와 검증된 Cloudflare 오류 코드만 남긴다. 본문은 최대 4096바이트만 읽어 `error code:` 또는 `cf-error-code` 표식의 1010·1015·1016·1020·1033·1101·1102만 추출하고 원문은 저장하지 않는다. 코드가 없다는 사실로 Access 또는 WAF 원인을 확정하지 않는다. 실제 배포 전 같은 main의 `verify-cloudflare.yml`을 수동 실행해 읽기 전용으로 진단할 수 있다.
+
 ## GHCR 홈 이미지 전달
 
 새 deploy-home workflow는 publish → deploy → notify로 나눈다. publish는 packages:write로 tested-release 이미지를 GHCR의 source SHA tag에 발행하고 registry-release artifact를 만든다. 기존 tag는 digest를 조회해 JAR·소스 번들 검증 후 재사용하며 덮어쓰지 않는다. 404 이외의 registry 조회 오류는 중단한다. repo 이름은 ghcr.io/ject-study/ziper-server로 고정한다.

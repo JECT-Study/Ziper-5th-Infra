@@ -40,6 +40,7 @@ jobs:
           BACKUP_ORIGIN: ${{ vars.BACKUP_ORIGIN }}
           HOME_ACCESS_CLIENT_ID: ${{ secrets.HOME_ACCESS_CLIENT_ID }}
           HOME_ACCESS_CLIENT_SECRET: ${{ secrets.HOME_ACCESS_CLIENT_SECRET }}
+          HOME_ACCESS_CREDENTIALS_SHA256: ${{ secrets.HOME_ACCESS_CREDENTIALS_SHA256 }}
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         if: always()
         with:
