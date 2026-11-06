@@ -87,7 +87,9 @@ def graphql_error_kind(body):
 
 
 def main():
+    credential_source = os.environ.get('CF_SECURITY_TOKEN_SOURCE', 'worker')
     report = {'checkedAt': datetime.now(timezone.utc).isoformat(), 'host': HOST,
+              'credentialSource': credential_source if credential_source in ('dedicated', 'worker') else 'unrecognized',
               'readOnly': True, 'eventsReadable': False, 'events': [],
               'scope': 'At most20 sampled historical events for protected readyz; settings alone do not establish the cause'}
     try:
