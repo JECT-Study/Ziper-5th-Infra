@@ -22,12 +22,20 @@ def validate_members(members):
             raise SystemExit('Invalid release file type or size')
 
 
-def main():
-    version = sys.argv[1]
+def copy_release(source, destination, limit=2_000_000_000):
+    total = 0
+    while chunk := source.read(65_536):
+        total += len(chunk)
+        if total > limit:
+            raise SystemExit('Release exceeds size limit')
+        destination.write(chunk)
+    return total
+
+
+def deploy(version, archive):
     if not re.fullmatch('[0-9a-f]{40}', version):
         raise SystemExit('Invalid release identifier')
     root = Path('/opt/ziper')
-    archive = Path('/mnt/c/ProgramData/Ziper/incoming') / (version + '.tgz')
     with tempfile.TemporaryDirectory(dir=root) as temporary:
         stage = Path(temporary)
         with tarfile.open(archive, 'r:gz') as bundle:
@@ -74,6 +82,33 @@ def main():
             target.chmod(0o600)
         (release / 'image-id').write_text(actual + '\n')
         subprocess.run(['bash', str(trusted / 'deploy.sh'), version], env=env, check=True)
+
+
+def main():
+    command = ' '.join(sys.argv[1:])
+    if command == 'check':
+        print('ZIPER_CI_RECEIVER_READY', flush=True)
+        return
+    match = re.fullmatch(r'deploy ([0-9a-f]{40})', command)
+    if match is None:
+        raise SystemExit('Unsupported receiver command')
+    os.umask(0o077)
+    version = match[1]
+    incoming = Path('/opt/ziper/incoming')
+    incoming.mkdir(mode=0o700, exist_ok=True)
+    archive = incoming / (version + '.tgz')
+    created = False
+    try:
+        with archive.open('xb') as destination:
+            created = True
+            size = copy_release(sys.stdin.buffer, destination)
+        print(f'ZIPER_RELEASE_BYTES={size}', flush=True)
+        with archive.open('rb') as content:
+            print('ZIPER_RELEASE_SHA256=' + hashlib.file_digest(content, 'sha256').hexdigest(), flush=True)
+        deploy(version, archive)
+    finally:
+        if created:
+            archive.unlink(missing_ok=True)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,13 @@
+{
+  "checkedAt": "2026-11-06T11:25:12.481616+00:00",
+  "scope": "Read-only Cloudflare access; deployment write access is unverified",
+  "checks": {
+    "tokenActive": true,
+    "accountReadable": true,
+    "workersReadable": true,
+    "zoneReadable": true,
+    "routesReadable": true
+  },
+  "writeAccessVerified": false,
+  "result": "passed"
+}

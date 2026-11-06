@@ -16,3 +16,4 @@
 장기적인 인프라·인증·일관성·장애 전환 결정은 ADR에 배경·결정·대안·영향과 한계를 남깁니다. 결정을 바꾸면 새 ADR로 대체 관계를 기록합니다.
 - [0002 예약 운영과 운영 E2E 증거](adr/0002-scheduled-operation-and-e2e.md)
 - [0003 소유자 리뷰와 관리자 bypass](adr/0003-owner-review-and-admin-bypass.md)
+- [0004 SSH release 바이너리 입력을 WSL에 직접 전달](adr/0004-native-ssh-release-input.md)
