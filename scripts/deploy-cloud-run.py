@@ -24,6 +24,7 @@ SERVICE = 'ziper-backup'
 AR_HOST = REGION + '-docker.pkg.dev'
 AR_IMAGE = AR_HOST + '/' + PROJECT + '/ziper-releases/ziper-server'
 RUNTIME = 'ziper-runtime@' + PROJECT + '.iam.gserviceaccount.com'
+PROJECT_NUMBER = '45190721178'
 SCHEDULE = Path(__file__).resolve().parents[1] / 'config/production.json'
 ORIGINAL_FIELDS = {'sourceSha', 'registryImage', 'imageManifestDigest', 'imageConfigDigest', 'jarSha256'}
 MIRROR_FIELDS = ORIGINAL_FIELDS | {'artifactImage', 'artifactManifestDigest', 'image'}
@@ -242,6 +243,70 @@ def is_ready(resource):
         and condition.get('type') == 'Ready' and condition.get('status') == 'True' for condition in conditions)
 
 
+def secret_mounts_match(resource, spec, container):
+    """Resolve Cloud Run v1 volume names and optional same-project secret aliases."""
+    expected = {'/run/ziper-config': ('ziper-runtime-properties', 'application.properties'),
+                '/run/ziper': ('ziper-db-ca', 'db-ca.pem')}
+    annotations = resource['metadata'].get('annotations', {})
+    raw_aliases = annotations.get('run.googleapis.com/secrets', '')
+    if not isinstance(raw_aliases, str):
+        return False
+    aliases = {}
+    if raw_aliases:
+        for entry in raw_aliases.split(','):
+            parts = entry.split(':', 1)
+            if len(parts) != 2 or not parts[0] or parts[0] in aliases:
+                return False
+            match = re.fullmatch(r'projects/(' + re.escape(PROJECT_NUMBER) + '|' + re.escape(PROJECT)
+                                 + r')/secrets/(ziper-runtime-properties|ziper-db-ca)', parts[1])
+            if match is None:
+                return False
+            aliases[parts[0]] = match[2]
+    volumes, mounts = spec.get('volumes'), container.get('volumeMounts')
+    if not isinstance(volumes, list) or len(volumes) != 2 or not isinstance(mounts, list) or len(mounts) != 2:
+        return False
+    indexed = {}
+    for volume in volumes:
+        if (not isinstance(volume, dict) or set(volume) != {'name', 'secret'}
+                or not isinstance(volume['name'], str) or not volume['name'] or volume['name'] in indexed
+                or not isinstance(volume['secret'], dict)):
+            return False
+        indexed[volume['name']] = volume['secret']
+    seen_paths, used_names, used_aliases = set(), set(), set()
+    for mount in mounts:
+        if (not isinstance(mount, dict) or not set(mount) <= {'name', 'mountPath', 'readOnly', 'subPath'}
+                or mount.get('subPath', '') != ''
+                or ('readOnly' in mount and type(mount['readOnly']) is not bool)):
+            return False
+        path, name = mount.get('mountPath'), mount.get('name')
+        if not isinstance(path, str) or path not in expected or path in seen_paths or name not in indexed or name in used_names:
+            return False
+        seen_paths.add(path)
+        used_names.add(name)
+        secret = indexed[name]
+        if (not set(secret) <= {'secretName', 'items', 'defaultMode', 'optional'}
+                or secret.get('optional', False) is not False or type(secret.get('defaultMode', 0)) is not int
+                or secret.get('defaultMode', 0) not in (0, 0o444)):
+            return False
+        reference = secret.get('secretName')
+        if not isinstance(reference, str):
+            return False
+        if reference in aliases:
+            used_aliases.add(reference)
+        resolved = aliases.get(reference, reference)
+        if resolved != expected[path][0]:
+            return False
+        items = secret.get('items')
+        if not isinstance(items, list) or len(items) != 1 or not isinstance(items[0], dict):
+            return False
+        item = items[0]
+        if (not set(item) <= {'key', 'path', 'mode'} or item.get('key') != '1'
+                or item.get('path') != expected[path][1] or type(item.get('mode', 0)) is not int
+                or item.get('mode', 0) not in (0, 0o444)):
+            return False
+    return seen_paths == set(expected) and used_names == set(indexed) and used_aliases == set(aliases)
+
+
 def revision_matches(resource, release):
     try:
         spec = resource['spec']
@@ -250,7 +315,9 @@ def revision_matches(resource, release):
         annotations = resource['metadata'].get('annotations', {})
         limits = container['resources']['limits']
         probe = container['startupProbe']
-        return (container['image'] == release['image']
+        return (len(spec['containers']) == 1 and spec.get('serviceAccountName') == RUNTIME
+                and secret_mounts_match(resource, spec, container)
+                and container['image'] == release['image']
                 and all(env.get(k) == v for k, v in desired_env(release['sourceSha']).items())
                 and annotations.get('autoscaling.knative.dev/minScale', '0') == '0'
                 and annotations.get('run.googleapis.com/cpu-throttling') == 'true'

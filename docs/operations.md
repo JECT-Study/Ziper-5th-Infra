@@ -105,7 +105,7 @@ Linux workflow는 `timeout --signal=KILL 180s`로 검사 프로세스 전체에�
 
 고유 verification tag에서 config·JAR를 검사하며, 실패한 metadata는 기존 release tag를 바꾸지 않는다. 수신기부터 deploy.sh까지 공통 deploy.lock을 유지한다. inherited fd의 inode를 확인하며 별도로 같은 lock을 다시 열어 교착시키지 않는다. 복구 작업도 같은 lock을 사용해야 한다.
 
-cloudflared 시작 실패도 app/readiness 실패와 같은 롤백으로 처리한다. 이전 runtime과 current-version을 보존하고 최초 실패는 app을 중지한다. 같은 release를 다시 실행하다 Tunnel 단계가 실패했다고 기존 app을 무조건 중지하지 않는다.
+cloudflared 시작이나 current-version 기록 실패도 app/readiness 실패와 같은 롤백으로 처리한다. 이전 runtime과 current-version을 보존하고 최초 실패는 app을 중지한다. 같은 release를 다시 실행하다 Tunnel 단계가 실패했다고 기존 app을 무조건 중지하지 않는다.
 
 보류 시간에도 GHCR 발행·재검증은 가능하지만 runtime 변경은 하지 않는다. publish 시작 당시와 home mutation 직전 workflow 시간을 구분하며 수신기도 production.json으로 재검사한다. pull 중 02:30 경계를 넘으면 release tag·컨테이너를 변경하지 않고 보류한다. 공개 readiness 단계는 보류 시 건너뛰고 Discord에도 보류를 전달한다. publish 자체가 실패했다면 보류 시간에도 실패 알림으로 기록한다.
 
@@ -118,3 +118,11 @@ cloudflared 시작 실패도 app/readiness 실패와 같은 롤백으로 처리�
 GCP 부트스트랩은 `ZIPER_GCLOUD=<gcloud 경로> python3 scripts/bootstrap-gcp-production.py`로 명시 실행한다. 비밀 원본은 로컬 .config/ziper/deployment이고 값은 출력하지 않는다. source protection과 전용 WIF 조건을 먼저 설정하며 CI 장기 GCP 키는 만들지 않는다. 비용 cap은 Cloud Run 범위이며 지출 0원의 보장은 아니다.
 
 `deployment/home/recovery.py`는 root 전용 lease로 집어 app만 복구한다. 독립 systemd timer를 설치하고, 실행 중인 app에 seconds0 lease를 arm하여 다음 tick의 already_running과 lease 제거를 실제 대조한 후에만 stop한다. `scripts/observe-production-e2e.py`는 token을 private 파일에서 읽고 origin·release·분 표본·전이·단조 시계를 보존한다. 예정 backup은 circuit failover 성공으로 계산하지 않는다. 자세한 결정은 [ADR 0008](adr/0008-private-cloud-run-and-production-e2e.md), 실행 범위는 PR #1과 날짜별 증거를 따른다.
+
+WIF 실패 시 `scripts/inspect-oidc-claims.py`는 GitHub 발급 토큰을 메모리에서만 해석하고 repository ID·ref·environment·subject·workflow 참조만 출력합니다. JWT·Bearer credential·원본 응답은 저장하거나 artifact로 올리지 않습니다. 제공자 조건은 이 실제 claim과 대조한 뒤 수정하며 조건 거부를 우회하기 위해 main/production 경계를 제거하지 않습니다.
+
+`install-home-control.py`는 기본값이 계획만 생성합니다. 검토한 main 조상 SHA의 공개 코드·정책·timer 아홉 파일만 작은 ASCII chunk로 전달하고 원격 해시가 일치할 때 공통 잠금 아래 설치합니다. 실제 설치는 `--install` 명시와 로컬 시간 가드가 필요하며 비밀·이미지는 보내지 않습니다. 설치 후 scheduler와 private/public readiness는 별도로 검증합니다.
+
+2026-11-07 GitHub OIDC 설정 API에서 Server 저장소의 `use_immutable_subject=true`와 owner/repository ID를 포함한 prefix를 확인했습니다. [GitHub 공식 설명](https://docs.github.com/en/actions/reference/security/oidc#immutable-subject-claims)에 맞춰 WIF의 정확한 subject를 갱신하며 repository ID·main ref·production 환경 제한을 보존합니다. bootstrap은 알려진 구형 조건만 이행하고 다른 조건·issuer·mapping 변경은 중단합니다. 갱신 뒤 provider readback과 실제 Actions 인증을 각각 확인합니다.
+
+독립 복구 timer 정의는 `deployment/home/systemd/`가 소유합니다. 검토된 설치 후 root에서 `systemctl daemon-reload`와 `systemctl enable --now ziper-recovery.timer`를 명시 실행하고 실제 다음 tick을 기다립니다. timer는 매분 root 전용 lease만 확인하고 lease가 없으면 앱을 건드리지 않습니다. `arm --seconds 0`의 lease 제거와 `already_running` 결과를 확인하기 전에는 장애를 주입하지 않습니다.
