@@ -1,0 +1,48 @@
+{
+  "ok": true,
+  "infraSha": "317bba3a2758aea4d212ef8831e2b0f75a5b51b8",
+  "applicationRequested": true,
+  "stage": "receipt",
+  "controlPayloadBytes": 2640,
+  "release": "263558f6f2cf97ad717f71335c95c49214ae908c",
+  "applied": true,
+  "updatedContainerCount": 0,
+  "before": [
+    {
+      "service": "app",
+      "containerId": "373a81a6ea78adda683d5488531c0a8e45013727fa038f4f1f026d4c1afd7eb9",
+      "restartPolicy": "always",
+      "running": true,
+      "startedAt": "2026-11-06T21:09:54.692311375Z"
+    },
+    {
+      "service": "cloudflared",
+      "containerId": "b1d8fddb7e17ce1d16899460e858ce9152e2c6fedd5420e601a09b6e3b300898",
+      "restartPolicy": "always",
+      "running": true,
+      "startedAt": "2026-11-06T21:09:55.337416028Z"
+    }
+  ],
+  "after": [
+    {
+      "service": "app",
+      "containerId": "373a81a6ea78adda683d5488531c0a8e45013727fa038f4f1f026d4c1afd7eb9",
+      "restartPolicy": "always",
+      "running": true,
+      "startedAt": "2026-11-06T21:09:54.692311375Z"
+    },
+    {
+      "service": "cloudflared",
+      "containerId": "b1d8fddb7e17ce1d16899460e858ce9152e2c6fedd5420e601a09b6e3b300898",
+      "restartPolicy": "always",
+      "running": true,
+      "startedAt": "2026-11-06T21:09:55.337416028Z"
+    }
+  ],
+  "sameContainerStartTimes": true,
+  "referencedFilesUnchanged": true,
+  "newImageDeployment": false,
+  "wholeHomeBootVerified": false,
+  "remoteOk": true,
+  "checkedAt": "2026-11-07T08:17:31.360791+09:00"
+}

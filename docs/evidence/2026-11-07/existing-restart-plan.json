@@ -44,5 +44,6 @@
   "newImageDeployment": false,
   "wholeHomeBootVerified": false,
   "remoteOk": true,
-  "checkedAt": "2026-11-07T07:59:25.245732+09:00"
+  "checkedAt": "2026-11-07T07:59:25.245732+09:00",
+  "scope": "Read-only local preview using reviewed cba schedule; no application. Later apply separately verifies exact reviewed script/helper and main CI."
 }
