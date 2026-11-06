@@ -1,0 +1,39 @@
+{
+  "checkedAt": "2026-11-06T22:15:51.679566+00:00",
+  "repository": "JECT-Study/Ziper-5th-Infra",
+  "branch": "main",
+  "adminEnforcement": true,
+  "pullRequestBypass": {
+    "users": [
+      "joonamin"
+    ],
+    "teams": [],
+    "apps": []
+  },
+  "requiredApprovals": 1,
+  "requireCodeOwner": true,
+  "dismissStale": true,
+  "requireLastPushApproval": true,
+  "checksPreserved": [
+    {
+      "context": "check",
+      "app_id": 15368
+    }
+  ],
+  "requireUpdatedBase": true,
+  "pushUsers": [
+    "joonamin"
+  ],
+  "forcePushAllowed": false,
+  "deletionAllowed": false,
+  "historyRuleset": {
+    "id": 26637239,
+    "enforcement": "active",
+    "bypassActors": [],
+    "types": [
+      "non_fast_forward",
+      "deletion"
+    ]
+  },
+  "scope": "Configured individual PR allowance and admin enforcement; readback preserves checks/history. Other administrator login or destructive force-push not tested."
+}

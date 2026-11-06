@@ -27,3 +27,5 @@
 이번 운영 준비의 [계획](evidence/2026-11-07/plan.md)과 [결정 로그](evidence/2026-11-07/decisions.tsv)는 실제 실행 증거를 추가하며 유지합니다.
 
 - [0009 예약 종료 후 기존 컨테이너 재기동](adr/0009-resume-after-scheduled-boot.md)
+
+- [0010 Infra 소유자 개인의 PR 리뷰 예외](adr/0010-owner-only-review-bypass.md)

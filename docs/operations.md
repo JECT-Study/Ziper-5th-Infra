@@ -8,6 +8,8 @@
 
 현재 실제 차단과 이어서 실행할 조건은 [2026-11-07 walkthrough](nightly-walkthrough-2026-11-07.md)에 둔다. `scripts/verify-production-boundaries.py`는 실제 Worker·Cloud Run 배포 뒤 `--release`·`--expected-origin`·`--backup-origin`·`--output`을 지정해 읽기 전용으로 실행한다. 로컬 private 파일의 JWT·ops token은 메모리에서만 사용하고 유효/잘못된 JWT 전달, upstream 헤더 위조 시 정상 응답·비밀 헤더 응답 노출 없음, ops GET 인증·POST 거부, 직접 origin 비공개 경계를 검사한다. 업무 데이터 쓰기·다른 구성원 계정·부하 검사가 아니며 준비만 된 스크립트를 운영 통과로 기록하지 않는다.
 
+Infra main의 현재 리뷰 예외는 [ADR0010](adr/0010-owner-only-review-bypass.md)을 따른다. 관리자 강제는 켜고 PR allowance의 사용자만 joonamin으로 지정한다. 설정 원본 `config/github-main-review.json`의 review 부분은 GitHub의 required_pull_request_reviews PATCH, 관리자 강제는 enforce_admins POST로 적용하며 변경 후 status check·push 제한·별도 이력 ruleset도 재조회한다. Source 보호 설정은 이 구성의 대상이 아니다.
+
 ## GHCR 홈 이미지 전달
 
 새 deploy-home workflow는 publish → deploy → notify로 나눈다. publish는 packages:write로 tested-release 이미지를 GHCR의 source SHA tag에 발행하고 registry-release artifact를 만든다. 기존 tag는 digest를 조회해 JAR·소스 번들 검증 후 재사용하며 덮어쓰지 않는다. 404 이외의 registry 조회 오류는 중단한다. repo 이름은 ghcr.io/ject-study/ziper-server로 고정한다.
