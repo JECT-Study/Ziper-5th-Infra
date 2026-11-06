@@ -111,6 +111,12 @@ jobs:
           name: receiver-stream-proof
           path: dist/receiver-stream-proof.json
           if-no-files-found: ignore
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: release-manifest
+          path: dist/home-release/manifest.json
+          if-no-files-found: ignore
   notify:
     needs: deploy
     if: always() && github.repository == 'JECT-Study/Ziper-5th-Server' && github.ref == 'refs/heads/main'

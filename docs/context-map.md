@@ -17,3 +17,4 @@
 - [0002 예약 운영과 운영 E2E 증거](adr/0002-scheduled-operation-and-e2e.md)
 - [0003 소유자 리뷰와 관리자 bypass](adr/0003-owner-review-and-admin-bypass.md)
 - [0004 SSH release 바이너리 입력을 WSL에 직접 전달](adr/0004-native-ssh-release-input.md)
+- [0005 전송·로드 검증의 OCI config digest](adr/0005-portable-image-identity.md)

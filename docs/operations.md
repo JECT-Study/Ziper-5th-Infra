@@ -73,4 +73,6 @@ Infra main의 force push·삭제는 bypass 대상이 없는 별도 ruleset `2663
 
 Windows의 집어 전용 키 강제 명령은 `C:\Windows\System32\wsl.exe -d Ubuntu --exec python3 /opt/ziper/ci/receive.py $env:SSH_ORIGINAL_COMMAND`다. 기존 Windows 기본 PowerShell이 원래 명령을 데이터 인수로 전달하며 수신기는 check 또는 deploy와 40자리 SHA만 허용한다. 이중 PowerShell의 바이너리 stdin 경유는 제거했다. Python이 WSL의 전용 incoming 디렉터리에서 배타 생성·2GB 제한·정리까지 담당한다. 다른 키나 공유 sshd의 기본 셸은 변경하지 않는다. 대용량 전달은 실제 1MiB 바이너리의 길이와 해시를 대조하고 이후 실제 release로 검증한다. 개인 Access 세션의 검사와 CI 서비스 토큰의 운영 배포 결과는 구분한다.
 
+CI·홈 간 동일성은 release manifest의 `imageConfigDigest`로 비교한다. `/opt/ziper/ci`에 receive.py와 image_identity.py를 함께 설치한다. archive의 config digest와 로드 후 재export한 config digest를 모두 대조한다. 호스트의 image-id는 로컬 Docker 엔진 Id이며 이식 가능한 digest와 다를 수 있다. [ADR 0005](adr/0005-portable-image-identity.md)에 근거와 비용을 기록한다. release-manifest artifact에는 SHA와 digest만 보존하며 비밀 설정을 포함하지 않는다.
+
 현재 확인한 Server production Secret은 DISCORD_DEPLOY_WEBHOOK_URL, ZIPER_CI_SSH_KEY, ZIPER_SSH_KNOWN_HOSTS_B64다. CF_ACCESS_CLIENT_ID와 CF_ACCESS_CLIENT_SECRET은 Server와 Infra Repository secrets에서 이름을 확인했다. Server는 `secrets: inherit`로 전달하므로 production 환경에 중복 등록할 필요가 없다. 사용자에게 값 전달을 요청하지 않고 Secret 이름만 조회한다.
