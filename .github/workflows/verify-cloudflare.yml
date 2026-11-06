@@ -27,6 +27,25 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
           CLOUDFLARE_ZONE_NAME: ${{ vars.CLOUDFLARE_ZONE_NAME }}
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: '24'
+      - run: npm ci
+      - name: Diagnose protected home origin without deploying
+        run: node scripts/verify-origin.ts
+        env:
+          PUBLIC_ORIGIN: ${{ vars.PUBLIC_ORIGIN }}
+          HOME_ORIGIN: ${{ vars.HOME_ORIGIN }}
+          BACKUP_ENABLED: ${{ vars.BACKUP_ENABLED || 'false' }}
+          BACKUP_ORIGIN: ${{ vars.BACKUP_ORIGIN }}
+          HOME_ACCESS_CLIENT_ID: ${{ secrets.HOME_ACCESS_CLIENT_ID }}
+          HOME_ACCESS_CLIENT_SECRET: ${{ secrets.HOME_ACCESS_CLIENT_SECRET }}
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: home-origin-health
+          path: dist/home-origin-health.json
+          if-no-files-found: ignore
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         if: always()
         with:

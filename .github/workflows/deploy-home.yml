@@ -101,7 +101,7 @@ jobs:
           "${connection[@]}" "deploy $GITHUB_SHA" < dist/home-release.tgz
       - name: Verify public readiness
         if: steps.window.outputs.deferred != 'true'
-        run: python3 server/scripts/verify-public-health.py --url https://api-ziper.joonamin.dev
+        run: python3 scripts/verify-home-public.py --contract server/scripts/verify-public-health.py --output dist/public-health.json
       - if: always()
         name: Remove temporary SSH credentials
         run: rm -f "$RUNNER_TEMP/ziper-key" "$RUNNER_TEMP/ziper-known-hosts"
@@ -110,6 +110,12 @@ jobs:
         with:
           name: receiver-stream-proof
           path: dist/receiver-stream-proof.json
+          if-no-files-found: ignore
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: always()
+        with:
+          name: public-health
+          path: dist/public-health.json
           if-no-files-found: ignore
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         if: always()
