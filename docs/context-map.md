@@ -24,3 +24,5 @@
 - [0008 비공개 Cloud Run 백업과 운영 장애 검증](adr/0008-private-cloud-run-and-production-e2e.md)
 
 이번 운영 준비의 [계획](evidence/2026-11-07/plan.md)과 [결정 로그](evidence/2026-11-07/decisions.tsv)는 실제 실행 증거를 추가하며 유지합니다.
+
+- [0009 예약 종료 후 기존 컨테이너 재기동](adr/0009-resume-after-scheduled-boot.md)

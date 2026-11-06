@@ -1,0 +1,16 @@
+{
+  "checkedAt": "2026-11-06T21:11:29.146358+00:00",
+  "ok": true,
+  "scope": "Disposable nested Docker daemon; no production daemon or host reboot",
+  "wholeHomeBootVerified": false,
+  "nestedDaemonVersion": "29.6.2",
+  "afterManualStop": {
+    "always-policy-probe": false,
+    "unless-stopped-policy-probe": false
+  },
+  "afterNestedDaemonRestart": {
+    "always-policy-probe": true,
+    "unless-stopped-policy-probe": false
+  },
+  "disposableDaemonRemoved": true
+}
