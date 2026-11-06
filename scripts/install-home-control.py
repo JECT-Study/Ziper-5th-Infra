@@ -14,6 +14,8 @@ FILES={
  'deployment/home/compose.yml':'/opt/ziper/ci/compose.yml',
  'config/production.json':'/opt/ziper/ci/production.json',
  'deployment/home/recovery.py':'/opt/ziper/ops/recovery.py',
+ 'deployment/home/systemd/ziper-recovery.service':'/etc/systemd/system/ziper-recovery.service',
+ 'deployment/home/systemd/ziper-recovery.timer':'/etc/systemd/system/ziper-recovery.timer',
 }
 
 def remote(code):

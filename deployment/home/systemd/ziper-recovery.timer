@@ -1,0 +1,11 @@
+[Unit]
+Description=Check the Ziper recovery lease every minute
+
+[Timer]
+OnCalendar=*-*-* *:*:00
+AccuracySec=1s
+Persistent=true
+Unit=ziper-recovery.service
+
+[Install]
+WantedBy=timers.target
