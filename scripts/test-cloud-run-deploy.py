@@ -51,8 +51,16 @@ def provider():
                 'run.googleapis.com/cpu-throttling': 'true',
                 'run.googleapis.com/startup-cpu-boost': 'false',
                 'run.googleapis.com/execution-environment': 'gen2'}},
-                'spec': {'containerConcurrency': 20, 'timeoutSeconds': 30, 'containers': [
+                'spec': {'containerConcurrency': 20, 'timeoutSeconds': 30, 'serviceAccountName': deploy.RUNTIME,
+                         'volumes': [
+                             {'name': 'config-volume-uniquename', 'secret': {'secretName': 'ziper-runtime-properties',
+                              'items': [{'key': '1', 'path': 'application.properties'}]}},
+                             {'name': 'ca-volume-uniquename', 'secret': {'secretName': 'ziper-db-ca',
+                              'items': [{'key': '1', 'path': 'db-ca.pem'}]}}],
+                         'containers': [
                     {'image': mirror()['image'], 'resources': {'limits': {'cpu': '1', 'memory': '1Gi'}},
+                     'volumeMounts': [{'name': 'config-volume-uniquename', 'mountPath': '/run/ziper-config'},
+                                      {'name': 'ca-volume-uniquename', 'mountPath': '/run/ziper'}],
                      'startupProbe': {'httpGet': {'path': '/readyz', 'port': 8080},
                                       'timeoutSeconds': 3, 'periodSeconds': 5, 'failureThreshold': 30},
                      'env': [{'name': k, 'value': v} for k, v in deploy.desired_env(SOURCE).items()]}]}}},
@@ -232,6 +240,50 @@ class CloudRunDeployTests(unittest.TestCase):
                 deploy.deploy(mirror(), Path(directory) / 'release.json')
             self.assertEqual(str(error.exception), 'immutable_revision_configuration_drift_requires_new_source')
             self.assertEqual(api.call_count, 1)
+
+    def test_revision_requires_exact_runtime_identity(self):
+        for identity in (None, 'default', 'attacker@ziper-production.iam.gserviceaccount.com'):
+            changed = revision()
+            changed['spec']['serviceAccountName'] = identity
+            with self.subTest(identity=identity):
+                self.assertFalse(deploy.revision_matches(changed, mirror()))
+
+    def test_secret_volume_drift_and_overlapping_mounts_are_rejected(self):
+        def wrong_name(resource): resource['spec']['volumes'][0]['secret']['secretName'] = 'another-secret'
+        def wrong_version(resource): resource['spec']['volumes'][0]['secret']['items'][0]['key'] = 'latest'
+        def wrong_file(resource): resource['spec']['volumes'][0]['secret']['items'][0]['path'] = '../application.properties'
+        def nested_mount(resource): resource['spec']['containers'][0]['volumeMounts'][0]['mountPath'] = '/run/ziper/config'
+        def extra_mount(resource): resource['spec']['containers'][0]['volumeMounts'].append({'name': 'config-volume-uniquename', 'mountPath': '/etc'})
+        def duplicate_volume(resource): resource['spec']['volumes'][1]['name'] = resource['spec']['volumes'][0]['name']
+        def missing_item(resource): resource['spec']['volumes'][0]['secret']['items'] = []
+        def optional(resource): resource['spec']['volumes'][0]['secret']['optional'] = True
+        for mutation in (wrong_name, wrong_version, wrong_file, nested_mount, extra_mount, duplicate_volume, missing_item, optional):
+            changed = revision()
+            mutation(changed)
+            with self.subTest(mutation=mutation.__name__):
+                self.assertFalse(deploy.revision_matches(changed, mirror()))
+
+    def test_same_project_secret_aliases_resolve_without_assuming_volume_names(self):
+        changed = revision()
+        changed['metadata']['annotations']['run.googleapis.com/secrets'] = (
+            'properties-uuid:projects/45190721178/secrets/ziper-runtime-properties,'
+            'ca-uuid:projects/ziper-production/secrets/ziper-db-ca')
+        changed['spec']['volumes'][0]['secret']['secretName'] = 'properties-uuid'
+        changed['spec']['volumes'][1]['secret']['secretName'] = 'ca-uuid'
+        self.assertTrue(deploy.revision_matches(changed, mirror()))
+        changed['metadata']['annotations']['run.googleapis.com/secrets'] = (
+            'properties-uuid:projects/999999999/secrets/ziper-runtime-properties,'
+            'ca-uuid:projects/ziper-production/secrets/ziper-db-ca')
+        self.assertFalse(deploy.revision_matches(changed, mirror()))
+
+    def test_unknown_or_unused_secret_alias_is_not_ignored(self):
+        for aliases in ('unused:projects/45190721178/secrets/ziper-db-ca',
+                        'bad:projects/45190721178/secrets/unknown',
+                        'dup:projects/45190721178/secrets/ziper-db-ca,dup:projects/45190721178/secrets/ziper-db-ca'):
+            changed = revision()
+            changed['metadata']['annotations']['run.googleapis.com/secrets'] = aliases
+            with self.subTest(aliases=aliases):
+                self.assertFalse(deploy.revision_matches(changed, mirror()))
 
     def test_reconciling_revision_is_polled_read_only_then_reused(self):
         pending = revision()
