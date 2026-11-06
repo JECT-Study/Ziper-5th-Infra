@@ -29,3 +29,5 @@
 - [0009 예약 종료 후 기존 컨테이너 재기동](adr/0009-resume-after-scheduled-boot.md)
 
 - [0010 Infra 소유자 개인의 PR 리뷰 예외](adr/0010-owner-only-review-bypass.md)
+
+- [0011 기존 집어 컨테이너 재기동 정책의 정합](adr/0011-reconcile-existing-restart-policy.md)

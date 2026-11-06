@@ -18,12 +18,14 @@ FILES={
  'deployment/home/systemd/ziper-recovery.timer':'/etc/systemd/system/ziper-recovery.timer',
 }
 
-def remote(code):
- payload=base64.b64encode(code.encode()).decode()
- launcher="import base64;exec(base64.b64decode('"+payload+"'))"
+def remote(code, payload=None):
+ encoded_code=base64.b64encode(code.encode()).decode()
+ launcher="import base64;exec(base64.b64decode('"+encoded_code+"'))"
  ps='[Console]::OutputEncoding=[System.Text.UTF8Encoding]::new(); & C:\\Windows\\System32\\wsl.exe -d Ubuntu -u root --exec python3 -c "'+launcher+'"; exit $LASTEXITCODE'
+ if payload is not None:
+  ps='[Console]::OutputEncoding=[System.Text.UTF8Encoding]::new(); $ziperControl=[Console]::In.ReadToEnd(); $ziperControl | & C:\\Windows\\System32\\wsl.exe -d Ubuntu -u root --exec python3 -c "'+launcher+'"; exit $LASTEXITCODE'
  command='powershell.exe -NoProfile -NonInteractive -EncodedCommand '+base64.b64encode(ps.encode('utf-16-le')).decode()
- result=subprocess.run(['ssh','-T','-o','BatchMode=yes','-o','ConnectTimeout=10','ssh.joonamin.dev',command],capture_output=True,timeout=45)
+ result=subprocess.run(['ssh','-T','-o','BatchMode=yes','-o','ConnectTimeout=10','ssh.joonamin.dev',command],input=payload,capture_output=True,timeout=45)
  if result.returncode:raise RuntimeError('home_control_installation_failed_or_unknown')
  lines=result.stdout.decode(errors='replace').strip().splitlines()
  try:return json.loads(lines[-1].lstrip('\ufeff'))

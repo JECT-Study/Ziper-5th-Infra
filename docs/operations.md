@@ -87,6 +87,8 @@ Server 저장소 production 환경은 main만 허용하도록 생성·조회 확
 
 ## main 보호와 수동 홈 배포 준비
 
+기존 릴리스의 재기동 정책만 정합할 때는 [ADR0011](adr/0011-reconcile-existing-restart-policy.md)의 기본 읽기 계획을 먼저 확인한다. 명시한 두 container ID·release·검토된 Infra SHA로만 --apply하며 CI·시간·lease·lock 검사를 통과해야 한다. 이미지 배포를 대신하거나 배포 명령을 재실행하는 도구가 아니다. source 파일·start time·정책 readback과 공개 health를 별도로 기록한다.
+
 전체 경로의 CODEOWNERS는 @joonamin이다. 현재 Infra main은 관리자에게도 보호를 강제하고 PR allowance는 joonamin 개인에게만 둔다. force push·삭제는 금지하고 승인·check·대화 해결·최신 push 승인과 push/merge 사용자 joonamin 제한을 유지한다. 개인 PR 예외를 사용해도 CI 통과 후 병합하며 이를 사람의 리뷰 승인으로 기록하지 않는다. 현재 정책과 한계는 [ADR0010](adr/0010-owner-only-review-bypass.md)을 따른다. CODEOWNERS는 PR #1의 main 병합으로 활성화됐으며, 최초 연결의 관리자 전체 bypass는 [ADR0003](adr/0003-owner-review-and-admin-bypass.md)의 과거 정책이다.
 
 Infra main의 force push·삭제는 bypass 대상이 없는 별도 ruleset `26637239`로도 차단한다. PR 리뷰 bypass와 이력 보호를 분리하며 원본은 `config/github-main-history.json`에 둔다. 관리자가 ruleset 설정 자체를 바꾸는 권한까지 제한한 것은 아니다.

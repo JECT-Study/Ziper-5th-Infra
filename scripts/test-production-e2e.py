@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 import importlib.util
+from datetime import datetime
+import hashlib
 import json
 from pathlib import Path
 import tempfile
@@ -19,8 +21,92 @@ ROOT = Path(__file__).resolve().parents[1]
 recovery = load('recovery', ROOT / 'deployment/home/recovery.py')
 observer = load('observer', ROOT / 'scripts/observe-production-e2e.py')
 boundaries = load('boundaries', ROOT / 'scripts/verify-production-boundaries.py')
+installer = load('installer', ROOT / 'scripts/install-home-control.py')
+restart_policy = load('restart_policy', ROOT / 'scripts/reconcile-home-restart-policy.py')
 VERSION = 'a' * 40
 CONTAINER = 'b' * 64
+
+
+class RemoteControlTests(unittest.TestCase):
+    def test_existing_code_only_and_small_ascii_stdin_modes_preserve_inputs(self):
+        for payload in (None, b'fixture-small-ascii-control'):
+            with self.subTest(payload=payload), patch.object(installer.subprocess, 'run') as run:
+                run.return_value = SimpleNamespace(returncode=0, stdout=b'{"ok":true}\n')
+                self.assertEqual(installer.remote('print("fixture")', payload), {'ok': True})
+                self.assertEqual(run.call_args.kwargs['input'], payload)
+
+
+class RestartPolicyTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.root = Path(self.temp.name)
+        (self.root / 'ops').mkdir()
+        (self.root / 'ci').mkdir()
+        (self.root / 'current-version').write_text(VERSION)
+        self.compose = self.root / 'compose.yml'
+        self.compose.write_text('restart: unless-stopped\n')
+        self.policy = self.root / 'ci/production.json'
+        self.policy.write_text(json.dumps({'homeSchedule': {'timeZone': 'Asia/Seoul', 'start': '03:00', 'end': '06:00', 'deploySafetyMinutes': 30}}))
+        self.policy_hash = hashlib.sha256(self.policy.read_bytes()).hexdigest()
+        self.ids = ('b' * 64, 'c' * 64)
+        self.items = [{'Id': cid, 'Config': {'Env': ['SENTRY_RELEASE=' + VERSION, 'TOKEN=fixture-private-marker'],
+                      'Labels': {'com.docker.compose.project': 'ziper-production', 'com.docker.compose.service': service,
+                                 'com.docker.compose.project.config_files': str(self.compose)}},
+                      'State': {'Running': True, 'StartedAt': '2026-11-06T21:09:54Z'},
+                      'HostConfig': {'RestartPolicy': {'Name': 'unless-stopped'}}}
+                      for cid, service in zip(self.ids, ('app', 'cloudflared'))]
+        self.updates = []
+
+    def tearDown(self):
+        self.temp.cleanup()
+
+    def docker(self, command, **kwargs):
+        if command[1] == 'inspect':
+            value = json.dumps(self.items)
+        elif command[1:3] == ['update', '--restart=always']:
+            self.updates.append(command[3:])
+            for item in self.items:
+                if item['Id'] in command[3:]:
+                    item['HostConfig']['RestartPolicy']['Name'] = 'always'
+            value = ''
+        else:
+            raise AssertionError('Only inspect and policy update are allowed')
+        return SimpleNamespace(returncode=0, stdout=value)
+
+    def execute(self, apply):
+        with patch.object(restart_policy.subprocess, 'run', self.docker), patch.object(restart_policy, 'datetime') as clock:
+            clock.now.return_value = datetime(2026, 11, 7, 12)
+            return restart_policy.reconcile(*self.ids, VERSION, self.policy_hash, apply, self.root)
+
+    def test_plan_is_read_only_then_apply_and_repeat_change_only_policy(self):
+        plan = self.execute(False)
+        self.assertFalse(plan['applied'])
+        self.assertEqual(self.updates, [])
+        first = self.execute(True)
+        self.assertEqual(first['updatedContainerCount'], 2)
+        self.assertTrue(first['sameContainerStartTimes'])
+        self.assertTrue(first['referencedFilesUnchanged'])
+        self.assertEqual(self.updates, [list(self.ids)])
+        self.assertEqual(self.execute(True)['updatedContainerCount'], 0)
+        self.assertEqual(self.updates, [list(self.ids)])
+        self.assertEqual(self.compose.read_text(), 'restart: unless-stopped\n')
+        self.assertNotIn('fixture-private-marker', json.dumps(first))
+
+    def test_lease_and_other_project_never_receive_policy_update(self):
+        lease = self.root / 'ops/recovery-lease.json'
+        lease.write_text('{}')
+        with self.assertRaises(RuntimeError):
+            self.execute(True)
+        lease.unlink()
+        self.items[0]['Config']['Labels']['com.docker.compose.project'] = 'tocktock'
+        with self.assertRaises(RuntimeError):
+            self.execute(True)
+        self.items[0]['Config']['Labels']['com.docker.compose.project'] = 'ziper-production'
+        with patch.object(restart_policy.subprocess, 'run', self.docker), patch.object(restart_policy, 'datetime') as clock:
+            clock.now.side_effect = [datetime(2026, 11, 7, 12), datetime(2026, 11, 8, 2, 30)]
+            with self.assertRaisesRegex(RuntimeError, 'deferred_by_home_schedule'):
+                restart_policy.reconcile(*self.ids, VERSION, self.policy_hash, True, self.root)
+        self.assertEqual(self.updates, [])
 
 
 class BoundaryReceiptTests(unittest.TestCase):
