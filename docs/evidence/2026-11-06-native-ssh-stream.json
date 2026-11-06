@@ -1,0 +1,12 @@
+{
+  "checkedAt": "2026-11-06T11:38:09.078691+00:00",
+  "scope": "Restricted SSH and invalid binary archive; no application deployment",
+  "checks": {
+    "check": true,
+    "generalCommandDenied": true,
+    "binaryStream": true
+  },
+  "fixtureBytes": 1048576,
+  "fixtureSha256": "fbbab289f7f94b25736c58be46a994c441fd02552cc6022352e3d86d2fab7c83",
+  "result": "passed"
+}

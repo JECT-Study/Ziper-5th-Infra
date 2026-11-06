@@ -1,5 +1,13 @@
 # 검증 조건과 실제 확인 범위
 
+## 2026-11-06 운영 E2E 재개
+
+20:17 KST에 실제 Server main 수동 배포 `42209209521`을 시작했다. CI gate·artifact 다운로드·이미지 패키징을 통과했지만 SSH 입력 전달 단계에서 정체됐다. 기존 이중 PowerShell 수신 경로는 4바이트 fixture를 거부했으나 128KiB에서 시간 초과됐다. 이는 작은 fixture 거부만으로 대용량 전달이 검증되지 않았음을 보여준다.
+
+WSL에 직접 연결하는 별도 진단 키에서 128KiB·1MiB의 길이와 SHA256 일치를 확인했다. 수정 수신기에서 check 성공, 일반 명령 거부, 1MiB 전체 수신과 잘못된 archive 거부도 확인했다. [정제한 SSH 증거](evidence/2026-11-06-native-ssh-stream.json)는 개인 Access 세션을 사용한 결과이며 CI 서비스 토큰·실제 앱 배포 성공은 별도 판정한다. 로컬 검사는 기존 37개에 입력·크기·명령 경계 3개를 추가한 총 40개와 타입·린트·dry-run을 통과했다. [ADR 0004](adr/0004-native-ssh-release-input.md)에 수정 이유와 강제 명령을 연결했다.
+
+Infra Repository Secret의 CLOUDFLARE_API_TOKEN을 실제 runner에서 사용한 [읽기 검증 42210095321](https://github.com/JECT-Study/Ziper-5th-Infra/actions/runs/42210095321)은 토큰·계정·Worker 목록·zone·route 접근을 통과했다. [원본 판정](evidence/2026-11-06-cloudflare-access.json)은 쓰기 권한·Worker 배포를 검증한 결과가 아니다. OPS_READ_TOKEN을 production 환경에 등록했고 기존 SSH Access Secret의 재등록은 요구하지 않았다.
+
 현재 인계와 실제 판정은 [2026-11-06 nightly walkthrough](nightly-walkthrough-2026-11-06.md)를 먼저 읽는다. 아래 날짜별 기록은 실행 당시의 사실이며 이후 병합·설정 변경으로 대체된 항목을 포함한다. 최신 원본은 [nightly 증거 JSON](evidence/2026-11-06-nightly.json)으로 연결한다.
 
 03:17 KST의 Server main 수동 실행 `42082844118`은 예약 시간에 배포를 보류하고 지정 Discord 채널의 메시지 `1567966560079843328`을 확인했다. 이미지 생성·SSH 전달·readiness 검사는 건너뛰었다. 운영 앱 배포·Worker 정상/오류 경로·Cloud Run failover·600초 목표는 아직 미검증이다.

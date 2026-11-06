@@ -1,4 +1,5 @@
 import importlib.util
+import io
 from pathlib import Path
 import tarfile
 import unittest
@@ -10,6 +11,26 @@ spec.loader.exec_module(receiver)
 
 
 class ContractTests(unittest.TestCase):
+    def test_binary_stream_over_ssh_window_preserves_every_byte(self):
+        payload = bytes(range(256)) * 4096
+        output = io.BytesIO()
+        size = receiver.copy_release(io.BytesIO(payload), output)
+        self.assertEqual(len(payload), size)
+        self.assertEqual(payload, output.getvalue())
+
+    def test_stream_rejects_excess_size_before_writing_excess_chunk(self):
+        output = io.BytesIO()
+        with self.assertRaises(SystemExit):
+            receiver.copy_release(io.BytesIO(b'bad'), output, limit=2)
+        self.assertEqual(b'', output.getvalue())
+
+    def test_general_commands_rejected_before_receiving_payload(self):
+        from unittest.mock import patch
+        for command in ('whoami', 'deploy invalid', 'deploy ' + 'a' * 40 + '; whoami'):
+            with patch.object(receiver.sys, 'argv', ['receive.py', command]):
+                with self.assertRaises(SystemExit):
+                    receiver.main()
+
     def valid(self):
         return [tarfile.TarInfo(name) for name in ('image.tar.gz', 'manifest.json', 'compose.yml', 'deploy.sh')]
 

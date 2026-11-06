@@ -69,6 +69,8 @@ Server 저장소 production 환경은 main만 허용하도록 생성·조회 확
 
 Infra main의 force push·삭제는 bypass 대상이 없는 별도 ruleset `26637239`로도 차단한다. PR 리뷰 bypass와 이력 보호를 분리하며 원본은 `config/github-main-history.json`에 둔다. 관리자가 ruleset 설정 자체를 바꾸는 권한까지 제한한 것은 아니다.
 
-최초 검증은 홈 단독 배포를 우선한다. `deploy-home.yml`은 Server main에서만 재사용하도록 제한하며 source와 Infra SHA의 성공한 main CI를 요구한다. 검사한 JAR와 Sentry source bundle을 재사용해 이미지를 만들고 고정된 cloudflared checksum·SSH host key·전용 키·서비스 토큰으로 전송한다. 수신기는 고정 명령과 네 파일만 허용하며 관리자 설치 compose/deploy와 payload 계약을 비교한다. Windows 강제 명령·전용 키와 WSL 수신기를 설치했고 check 허용·일반 명령 거부·잘못된 archive 거부를 확인했다. 이 검사는 개인 Access 세션을 사용했으므로 CI 서비스 토큰 인증이나 앱 배포 성공의 증거는 아니다.
+최초 검증은 홈 단독 배포를 우선한다. `deploy-home.yml`은 Server main에서만 재사용하도록 제한하며 source와 Infra SHA의 성공한 main CI를 요구한다. 검사한 JAR와 Sentry source bundle을 재사용해 이미지를 만들고 고정된 cloudflared checksum·SSH host key·전용 키·서비스 토큰으로 전송한다. 수신기는 고정 명령과 네 파일만 허용하며 관리자 설치 compose/deploy와 payload 계약을 비교한다.
+
+Windows의 집어 전용 키 강제 명령은 `C:\Windows\System32\wsl.exe -d Ubuntu --exec python3 /opt/ziper/ci/receive.py $env:SSH_ORIGINAL_COMMAND`다. 기존 Windows 기본 PowerShell이 원래 명령을 데이터 인수로 전달하며 수신기는 check 또는 deploy와 40자리 SHA만 허용한다. 이중 PowerShell의 바이너리 stdin 경유는 제거했다. Python이 WSL의 전용 incoming 디렉터리에서 배타 생성·2GB 제한·정리까지 담당한다. 다른 키나 공유 sshd의 기본 셸은 변경하지 않는다. 대용량 전달은 실제 1MiB 바이너리의 길이와 해시를 대조하고 이후 실제 release로 검증한다. 개인 Access 세션의 검사와 CI 서비스 토큰의 운영 배포 결과는 구분한다.
 
 현재 확인한 Server production Secret은 DISCORD_DEPLOY_WEBHOOK_URL, ZIPER_CI_SSH_KEY, ZIPER_SSH_KNOWN_HOSTS_B64다. CF_ACCESS_CLIENT_ID와 CF_ACCESS_CLIENT_SECRET은 Server와 Infra Repository secrets에서 이름을 확인했다. Server는 `secrets: inherit`로 전달하므로 production 환경에 중복 등록할 필요가 없다. 사용자에게 값 전달을 요청하지 않고 Secret 이름만 조회한다.
