@@ -31,6 +31,8 @@
 
 ## 수동 배포
 
+`Verify Cloudflare access manually`는 main CI 성공 후 토큰 유효성·대상 계정·Worker 목록·zone·route의 읽기 접근만 확인한다. JSON 증거에는 결과와 HTTP 상태만 저장하고 API 응답 본문·토큰은 기록하지 않는다. 이 검사는 쓰기 권한이나 실제 배포 성공을 증명하지 않으며 Cloudflare 리소스를 생성·변경하지 않는다. 토큰은 Repository Secret 또는 production 환경 Secret으로 등록할 수 있다. 검증 구현은 `scripts/verify-cloudflare-access.py`다.
+
 `main`에 머지한 뒤 **CI** workflow의 해당 SHA push 실행이 성공했는지 확인하고 **Deploy edge manually**를 main에서 수동 실행한다. feature 브랜치의 dispatch는 배포 job을 실행하지 않는다. CI 성공 여부는 현재 HEAD와 동일한 SHA로 확인한다. 성공한 PR CI만으로는 배포되지 않는다.
 
 워크플로는 검사 → 비밀을 제외한 route 설정과 임시 secret 파일 준비 → 보호된 홈 `/readyz` 확인 → Worker·SQLite DO 업로드 → 공개 `/readyz` 3회 확인 순서다. `prepare-deploy.ts`는 현재 JSON 형태의 `wrangler.jsonc`를 읽어 `.wrangler/deployment/wrangler.json`을 생성한다. 생성 파일의 실제 account·host·route는 배포 실행의 설정을 따른다. 새 애플리케이션·Tunnel·Access·DNS·Cloud Run·청구 계정은 생성하지 않는다.
