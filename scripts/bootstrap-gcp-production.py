@@ -9,6 +9,30 @@ PRIVATE=Path.home()/'.config/ziper/deployment'
 DEPLOY=f'ziper-deployer@{PROJECT}.iam.gserviceaccount.com'
 RUNTIME=f'ziper-runtime@{PROJECT}.iam.gserviceaccount.com'
 INVOKER=f'ziper-edge-invoker@{PROJECT}.iam.gserviceaccount.com'
+OIDC_SUBJECT='repo:JECT-Study@155141962/Ziper-5th-Server@1440603337:environment:production'
+OIDC_LEGACY_SUBJECT='repo:JECT-Study/Ziper-5th-Server:environment:production'
+OIDC_MAPPING={'google.subject':'assertion.sub','attribute.repository_id':'assertion.repository_id','attribute.ref':'assertion.ref'}
+
+def oidc_condition(subject):
+ return "assertion.repository_id == '1440603337' && assertion.ref == 'refs/heads/main' && assertion.sub == '"+subject+"'"
+
+def ensure_wif_provider(pool, provider):
+ args=['iam','workload-identity-pools','providers']
+ location=['--location=global','--workload-identity-pool='+pool]
+ expected=oidc_condition(OIDC_SUBJECT)
+ current=run([*args,'describe',provider,*location],missing=True)
+ if current is None:
+  run([*args,'create-oidc',provider,*location,'--issuer-uri=https://token.actions.githubusercontent.com','--attribute-mapping='+','.join(k+'='+v for k,v in OIDC_MAPPING.items()),'--attribute-condition='+expected])
+ else:
+  if current.get('oidc',{}).get('issuerUri')!='https://token.actions.githubusercontent.com' or current.get('attributeMapping')!=OIDC_MAPPING:
+   raise SystemExit('Unexpected WIF issuer or mapping drift; review before changing it')
+  if current.get('attributeCondition')!=expected:
+   if current.get('attributeCondition')!=oidc_condition(OIDC_LEGACY_SUBJECT):
+    raise SystemExit('Unexpected WIF condition drift; review before changing it')
+   run([*args,'update-oidc',provider,*location,'--attribute-condition='+expected])
+ verified=run([*args,'describe',provider,*location])
+ if verified.get('attributeCondition')!=expected or verified.get('attributeMapping')!=OIDC_MAPPING or verified.get('oidc',{}).get('issuerUri')!='https://token.actions.githubusercontent.com':
+  raise SystemExit('WIF provider readback does not match the reviewed trust policy')
 
 def run(args, data=None, missing=False):
  p=subprocess.run([SDK,*args,'--project',PROJECT,'--quiet','--format=json'],input=data,capture_output=True)
@@ -66,9 +90,7 @@ def main():
  pool='ziper-github';provider='ziper-server'
  if run(['iam','workload-identity-pools','describe',pool,'--location=global'],missing=True) is None:
   run(['iam','workload-identity-pools','create',pool,'--location=global','--display-name=Ziper production Actions'])
- if run(['iam','workload-identity-pools','providers','describe',provider,'--location=global','--workload-identity-pool='+pool],missing=True) is None:
-  condition="assertion.repository_id == '1440603337' && assertion.ref == 'refs/heads/main' && assertion.sub == 'repo:JECT-Study/Ziper-5th-Server:environment:production'"
-  run(['iam','workload-identity-pools','providers','create-oidc',provider,'--location=global','--workload-identity-pool='+pool,'--issuer-uri=https://token.actions.githubusercontent.com','--attribute-mapping=google.subject=assertion.sub,attribute.repository_id=assertion.repository_id,attribute.ref=assertion.ref','--attribute-condition='+condition])
+ ensure_wif_provider(pool,provider)
  principal=f'principalSet://iam.googleapis.com/projects/{NUMBER}/locations/global/workloadIdentityPools/{pool}/attribute.repository_id/1440603337'
  run(['iam','service-accounts','add-iam-policy-binding',DEPLOY,'--member='+principal,'--role=roles/iam.workloadIdentityUser','--condition=None'])
  values={}

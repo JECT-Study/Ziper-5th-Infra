@@ -26,6 +26,7 @@ def load(name, filename):
 
 deploy = load('cloud_run_deployer', 'deploy-cloud-run.py')
 health = load('cloud_run_verifier', 'verify-cloud-run.py')
+bootstrap = load('cloud_run_bootstrap', 'bootstrap-gcp-production.py')
 SOURCE = 'a' * 40
 REVISION = 'ziper-backup-s' + SOURCE
 GHCR_DIGEST = 'sha256:' + 'b' * 64
@@ -381,6 +382,45 @@ class CloudRunDeployTests(unittest.TestCase):
             finally:
                 server.shutdown()
                 thread.join()
+
+
+class OidcTrustTests(unittest.TestCase):
+    def trust(self, subject=None):
+        return {'oidc': {'issuerUri': 'https://token.actions.githubusercontent.com'},
+                'attributeMapping': bootstrap.OIDC_MAPPING,
+                'attributeCondition': bootstrap.oidc_condition(subject or bootstrap.OIDC_SUBJECT)}
+
+    def test_legacy_subject_is_migrated_without_removing_main_or_environment(self):
+        with patch.object(bootstrap, 'run', side_effect=[self.trust(bootstrap.OIDC_LEGACY_SUBJECT), {}, self.trust()]) as command:
+            bootstrap.ensure_wif_provider('ziper-github', 'ziper-server')
+        update = command.call_args_list[1].args[0]
+        self.assertIn('update-oidc', update)
+        self.assertIn('--attribute-condition=' + self.trust()['attributeCondition'], update)
+        self.assertIn("assertion.ref == 'refs/heads/main'", update[-1])
+        self.assertIn('@1440603337:environment:production', update[-1])
+
+    def test_matching_trust_is_only_read(self):
+        with patch.object(bootstrap, 'run', side_effect=[self.trust(), self.trust()]) as command:
+            bootstrap.ensure_wif_provider('ziper-github', 'ziper-server')
+        self.assertTrue(all('describe' in call.args[0] for call in command.call_args_list))
+
+    def test_unknown_condition_or_issuer_is_not_overwritten(self):
+        for field in ('condition', 'issuer'):
+            with self.subTest(field=field):
+                trust = self.trust()
+                if field == 'condition':
+                    trust['attributeCondition'] += " && assertion.environment == 'production'"
+                else:
+                    trust['oidc']['issuerUri'] = 'https://unexpected.invalid'
+                with patch.object(bootstrap, 'run', return_value=trust) as command:
+                    with self.assertRaises(SystemExit):
+                        bootstrap.ensure_wif_provider('ziper-github', 'ziper-server')
+                self.assertEqual(command.call_count, 1)
+
+    def test_update_requires_matching_provider_readback(self):
+        with patch.object(bootstrap, 'run', side_effect=[self.trust(bootstrap.OIDC_LEGACY_SUBJECT), {}, self.trust(bootstrap.OIDC_LEGACY_SUBJECT)]):
+            with self.assertRaises(SystemExit):
+                bootstrap.ensure_wif_provider('ziper-github', 'ziper-server')
 
 
 if __name__ == '__main__':

@@ -122,3 +122,5 @@ GCP 부트스트랩은 `ZIPER_GCLOUD=<gcloud 경로> python3 scripts/bootstrap-g
 WIF 실패 시 `scripts/inspect-oidc-claims.py`는 GitHub 발급 토큰을 메모리에서만 해석하고 repository ID·ref·environment·subject·workflow 참조만 출력합니다. JWT·Bearer credential·원본 응답은 저장하거나 artifact로 올리지 않습니다. 제공자 조건은 이 실제 claim과 대조한 뒤 수정하며 조건 거부를 우회하기 위해 main/production 경계를 제거하지 않습니다.
 
 `install-home-control.py`는 기본값이 계획만 생성합니다. 검토한 main 조상 SHA의 공개 코드·정책 일곱 파일만 작은 ASCII chunk로 전달하고 원격 해시가 일치할 때 공통 잠금 아래 설치합니다. 실제 설치는 `--install` 명시와 로컬 시간 가드가 필요하며 비밀·이미지는 보내지 않습니다. 설치 후 scheduler와 private/public readiness는 별도로 검증합니다.
+
+2026-11-07 GitHub OIDC 설정 API에서 Server 저장소의 `use_immutable_subject=true`와 owner/repository ID를 포함한 prefix를 확인했습니다. [GitHub 공식 설명](https://docs.github.com/en/actions/reference/security/oidc#immutable-subject-claims)에 맞춰 WIF의 정확한 subject를 갱신하며 repository ID·main ref·production 환경 제한을 보존합니다. bootstrap은 알려진 구형 조건만 이행하고 다른 조건·issuer·mapping 변경은 중단합니다. 갱신 뒤 provider readback과 실제 Actions 인증을 각각 확인합니다.
