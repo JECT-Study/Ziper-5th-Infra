@@ -3,7 +3,7 @@ services:
   app:
     image: ${ZIPER_IMAGE:?Supply the verified release image}
     pull_policy: never
-    restart: unless-stopped
+    restart: always
     env_file:
       - ${ZIPER_PRIVATE_DIR:?Supply the private configuration directory}/runtime.env
     environment:
@@ -36,7 +36,7 @@ services:
   cloudflared:
     image: cloudflare/cloudflared@sha256:4955524aeaa379e154023d5a027c250f7b35041a2e7e950cf13f144bc9b9c5ba
     command: [tunnel, --no-autoupdate, run, --token-file, /run/secrets/tunnel-token]
-    restart: unless-stopped
+    restart: always
     volumes:
       - ${ZIPER_PRIVATE_DIR}/cloudflared-token:/run/secrets/tunnel-token:ro
     read_only: true
