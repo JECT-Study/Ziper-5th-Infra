@@ -12,7 +12,7 @@
 - [ ] 복구 및 HALF_OPEN 실패·CLOSED 전이 확인
 - [x] 03시 실제 530, 06시 Windows·Ubuntu 기동과 기존 정지 컨테이너 수동 복구 범위 기록
 - [x] Actions 보호 origin 403을 독립 재현하고 자격 일치·Cloudflare challenge 확인
-- [ ] PR #1·최종 보고서에 실제 증거와 실패·미실행 범위 기록
+- [x] PR #1·최종 보고서에 실제 증거와 실패·미실행 범위 기록
 
 ## 완료 판정
 
