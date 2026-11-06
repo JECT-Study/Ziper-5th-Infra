@@ -2,13 +2,16 @@
 
 - [x] poteto-mode Principles와 실제 배포 흐름 검토
 - [x] 기준선: main CI 성공, 최신 홈 배포 42250905425 실패, 현재 홈 릴리스 263558f...의 두 공개 probe 200
-- [ ] 최신 실패 root cause 식별 및 GHCR digest pull 경로 작성·검증
-- [ ] GCP spend cap 재조회 → 최소 권한·비밀 구성 → Cloud Run 동일 이미지 준비
-- [ ] Infra·Server CI와 사용자 승인 bypass 병합 → main 수동 배포
+- [x] 실제 실패 지점과 확정/가설 구분, GHCR digest pull 경로·오류 분기 작성·로컬 검증
+- [x] GCP spend cap 재조회 → 최소 권한·비밀 구성 → GHCR/AR 동일 이미지 준비
+- [x] Infra·Server CI와 사용자 승인 bypass 병합 → main 수동 준비 반복 성공
+- [ ] 06시 이후 별도 수동 runtime 배포와 실제 두 origin readiness
 - [ ] Worker 배포 → 1분 alarm·10분 표본·직접 origin 인증 검증
-- [ ] 자동 복구 watchdog 무해 검증 → 집어 앱 장애 → 600초 내 Cloud Run 전환
+- [x] 아홉 trusted control 파일 해시 일치와 독립 timer의 무해한 tick·lease 해소 확인
+- [ ] 집어 앱 장애 → 600초 내 Cloud Run 전환
 - [ ] 복구 및 HALF_OPEN 실패·CLOSED 전이 확인
-- [ ] 03:00 KST 예정 종료 관찰, 새벽 복귀는 실제 관찰 범위를 명시
+- [x] 03시 실제 530, 06시 Windows·Ubuntu 기동과 기존 정지 컨테이너 수동 복구 범위 기록
+- [x] Actions 보호 origin 403을 독립 재현하고 자격 일치·Cloudflare challenge 확인
 - [ ] PR #1·최종 보고서에 실제 증거와 실패·미실행 범위 기록
 
 ## 완료 판정

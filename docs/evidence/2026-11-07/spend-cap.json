@@ -1,0 +1,23 @@
+{
+  "checkedAt": "2026-11-06T19:23:32.169011+00:00",
+  "spendCap": {
+    "outputState": "CONFIGURED"
+  },
+  "amount": {
+    "specifiedAmount": {
+      "currencyCode": "KRW",
+      "units": "1000"
+    }
+  },
+  "budgetFilter": {
+    "projects": [
+      "projects/45190721178"
+    ],
+    "services": [
+      "services/152E-C115-5142"
+    ],
+    "creditTypesTreatment": "EXCLUDE_ALL_CREDITS",
+    "calendarPeriod": "MONTH"
+  },
+  "limitation": "Cloud Run estimate enforcement can be delayed; this does not prove or guarantee zero spending or cap Artifact Registry/Secrets costs."
+}

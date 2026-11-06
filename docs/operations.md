@@ -6,6 +6,8 @@
 
 실패 artifact `home-origin-health`에는 자격의 존재·일치 여부, HTTP 상태, `cf-mitigated: challenge` 여부와 검증된 Cloudflare 오류 코드만 남긴다. 본문은 최대 4096바이트만 읽어 `error code:` 또는 `cf-error-code` 표식의 1010·1015·1016·1020·1033·1101·1102만 추출하고 원문은 저장하지 않는다. 코드가 없다는 사실로 Access 또는 WAF 원인을 확정하지 않는다. 실제 배포 전 같은 main의 `verify-cloudflare.yml`을 수동 실행해 읽기 전용으로 진단할 수 있다.
 
+현재 실제 차단과 이어서 실행할 조건은 [2026-11-07 walkthrough](nightly-walkthrough-2026-11-07.md)에 둔다. `scripts/verify-production-boundaries.py`는 실제 Worker·Cloud Run 배포 뒤 `--release`·`--expected-origin`·`--backup-origin`·`--output`을 지정해 읽기 전용으로 실행한다. 로컬 private 파일의 JWT·ops token은 메모리에서만 사용하고 유효/잘못된 JWT 전달, upstream 헤더 위조 시 정상 응답·비밀 헤더 응답 노출 없음, ops GET 인증·POST 거부, 직접 origin 비공개 경계를 검사한다. 업무 데이터 쓰기·다른 구성원 계정·부하 검사가 아니며 준비만 된 스크립트를 운영 통과로 기록하지 않는다.
+
 ## GHCR 홈 이미지 전달
 
 새 deploy-home workflow는 publish → deploy → notify로 나눈다. publish는 packages:write로 tested-release 이미지를 GHCR의 source SHA tag에 발행하고 registry-release artifact를 만든다. 기존 tag는 digest를 조회해 JAR·소스 번들 검증 후 재사용하며 덮어쓰지 않는다. 404 이외의 registry 조회 오류는 중단한다. repo 이름은 ghcr.io/ject-study/ziper-server로 고정한다.

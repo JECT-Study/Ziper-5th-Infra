@@ -1,0 +1,88 @@
+{
+  "checkedAt": "2026-11-06T19:46:23.290764+00:00",
+  "preparationRuns": [
+    {
+      "runUrl": "https://github.com/JECT-Study/Ziper-5th-Server/actions/runs/42281106539",
+      "sourceSha": "6df199895f35781dd47a43d2166e581a14e44f5c",
+      "infraSha": "efc751f0cb72837261f913274a27a621e72b094d",
+      "conclusion": "success",
+      "jobs": [
+        {
+          "name": "home / publish",
+          "conclusion": "success",
+          "databaseId": 128109981645
+        },
+        {
+          "name": "home / backup",
+          "conclusion": "success",
+          "databaseId": 128110685405
+        },
+        {
+          "name": "home / notify",
+          "conclusion": "success",
+          "databaseId": 128111533054
+        },
+        {
+          "name": "home / deploy",
+          "conclusion": "skipped",
+          "databaseId": 128111534598
+        }
+      ],
+      "discordMessageId": "1568349329608024186",
+      "discordChannelId": "1566809692779323402",
+      "release": {
+        "sourceSha": "6df199895f35781dd47a43d2166e581a14e44f5c",
+        "registryImage": "ghcr.io/ject-study/ziper-server",
+        "imageManifestDigest": "sha256:6653d7cfd739b0ddc1fc65cc68dc5076a5e8ea70b77ca29758d459586fdcd5a6",
+        "imageConfigDigest": "sha256:d3c7245743e1609b62f06b2bd0785f2f605c778bcb29574548423cf6f02f254b",
+        "jarSha256": "bc9ed07d6e688c35b6cde39c26ced63bb6c5daf56fd1d4b66961366940dcbc78",
+        "artifactImage": "asia-southeast1-docker.pkg.dev/ziper-production/ziper-releases/ziper-server",
+        "artifactManifestDigest": "sha256:6653d7cfd739b0ddc1fc65cc68dc5076a5e8ea70b77ca29758d459586fdcd5a6",
+        "image": "asia-southeast1-docker.pkg.dev/ziper-production/ziper-releases/ziper-server@sha256:6653d7cfd739b0ddc1fc65cc68dc5076a5e8ea70b77ca29758d459586fdcd5a6"
+      }
+    },
+    {
+      "runUrl": "https://github.com/JECT-Study/Ziper-5th-Server/actions/runs/42281825461",
+      "sourceSha": "6df199895f35781dd47a43d2166e581a14e44f5c",
+      "infraSha": "efc751f0cb72837261f913274a27a621e72b094d",
+      "conclusion": "success",
+      "jobs": [
+        {
+          "name": "home / publish",
+          "conclusion": "success",
+          "databaseId": 128112494587
+        },
+        {
+          "name": "home / backup",
+          "conclusion": "success",
+          "databaseId": 128113091993
+        },
+        {
+          "name": "home / notify",
+          "conclusion": "success",
+          "databaseId": 128113822873
+        },
+        {
+          "name": "home / deploy",
+          "conclusion": "skipped",
+          "databaseId": 128113825454
+        }
+      ],
+      "discordMessageId": "1568350486388670529",
+      "discordChannelId": "1566809692779323402",
+      "release": {
+        "sourceSha": "6df199895f35781dd47a43d2166e581a14e44f5c",
+        "registryImage": "ghcr.io/ject-study/ziper-server",
+        "imageManifestDigest": "sha256:6653d7cfd739b0ddc1fc65cc68dc5076a5e8ea70b77ca29758d459586fdcd5a6",
+        "imageConfigDigest": "sha256:d3c7245743e1609b62f06b2bd0785f2f605c778bcb29574548423cf6f02f254b",
+        "jarSha256": "bc9ed07d6e688c35b6cde39c26ced63bb6c5daf56fd1d4b66961366940dcbc78",
+        "artifactImage": "asia-southeast1-docker.pkg.dev/ziper-production/ziper-releases/ziper-server",
+        "artifactManifestDigest": "sha256:6653d7cfd739b0ddc1fc65cc68dc5076a5e8ea70b77ca29758d459586fdcd5a6",
+        "image": "asia-southeast1-docker.pkg.dev/ziper-production/ziper-releases/ziper-server@sha256:6653d7cfd739b0ddc1fc65cc68dc5076a5e8ea70b77ca29758d459586fdcd5a6"
+      }
+    }
+  ],
+  "sameReleaseMetadata": true,
+  "runtimeDeploymentVerified": false,
+  "scope": "Two successful manual preparations at the same source SHA. Runtime remained deferred and home deploy was skipped in both; not production deployment or failover proof."
+}

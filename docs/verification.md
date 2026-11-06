@@ -1,5 +1,11 @@
 # 검증 조건과 실제 확인 범위
 
+## 최신 판정: 2026-11-07
+
+[Nightly walkthrough](nightly-walkthrough-2026-11-07.md)의 표와 [원본 증거](evidence/2026-11-07/)가 최신 상태입니다. GHCR/AR 준비를 같은 release로 두 번 성공했지만 새 runtime 쌍 배포·Worker 배포·실제 장애 전환은 미완료입니다. 최신 읽기 전용 Actions 실행은 자격 일치 true와 HTTP403, `cf-mitigated: challenge`를 기록했습니다. 정확한 Cloudflare 규칙은 대시보드 로그 확인이 필요합니다. 아래 과거 실행은 그 당시의 범위이며 최신 운영 성공으로 승격하지 않습니다.
+
+로컬 최신 검사는 Workers32·Node10·Python59, 총101개와 타입·린트·번들입니다. runtime pin의 main CI42300015630은99개이며 이후 경계 probe의 비밀 비노출 검사2개를 추가했습니다. 격리 nested Docker restart-policy 검증은 별도 실제 실행이며 이101개에 포함하지 않습니다. 운영 컨테이너의 다음 전체 BIOS 부팅이나 실제 Cloud Run 600초 복구를 증명하지 않습니다.
+
 ## 2026-11-06 운영 E2E 재개
 
 20:17 KST에 실제 Server main 수동 배포 `42209209521`을 시작했다. CI gate·artifact 다운로드·이미지 패키징을 통과했지만 SSH 입력 전달 단계에서 정체됐다. 기존 이중 PowerShell 수신 경로는 4바이트 fixture를 거부했으나 128KiB에서 시간 초과됐다. 이는 작은 fixture 거부만으로 대용량 전달이 검증되지 않았음을 보여준다.

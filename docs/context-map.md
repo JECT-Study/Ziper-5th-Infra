@@ -8,6 +8,7 @@
 | [운영](operations.md) | 배포 전제·비밀 관리·장애 대응 | Worker 설정, 워크플로, 운영 절차 |
 | [검증](verification.md) | 판정 조건과 실제 확인 범위 | 검사 실행, 운영 증거 추가 |
 | [Nightly walkthrough](nightly-walkthrough-2026-11-06.md) | 2026-11-06 인계와 실환경 판정 | 실제 실행 결과와 추가 준비 사항 |
+| [2026-11-07 nightly walkthrough](nightly-walkthrough-2026-11-07.md) | GHCR·WIF 준비, 06시 복귀와 실제 challenge 차단 | 실제 준비·배포·장애 실험의 범위를 구분하고 다음 실행 조건 반영 |
 
 ## 결정 이력
 

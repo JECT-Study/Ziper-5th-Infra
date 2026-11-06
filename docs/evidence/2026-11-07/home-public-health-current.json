@@ -1,0 +1,109 @@
+{
+  "checkedAt": "2026-11-06T21:59:47.663165+00:00",
+  "origin": "https://api-ziper.joonamin.dev",
+  "ok": true,
+  "samples": [
+    [
+      {
+        "path": "/livez",
+        "status": 200,
+        "noStore": true,
+        "statusOnly": true
+      },
+      {
+        "path": "/readyz",
+        "status": 200,
+        "noStore": true,
+        "statusOnly": true
+      }
+    ],
+    [
+      {
+        "path": "/livez",
+        "status": 200,
+        "noStore": true,
+        "statusOnly": true
+      },
+      {
+        "path": "/readyz",
+        "status": 200,
+        "noStore": true,
+        "statusOnly": true
+      }
+    ],
+    [
+      {
+        "path": "/livez",
+        "status": 200,
+        "noStore": true,
+        "statusOnly": true
+      },
+      {
+        "path": "/readyz",
+        "status": 200,
+        "noStore": true,
+        "statusOnly": true
+      }
+    ]
+  ],
+  "events": [
+    {
+      "attempt": 1,
+      "path": "/livez",
+      "elapsedSeconds": 1.042,
+      "timeoutSeconds": 5,
+      "status": 200,
+      "retryable": false,
+      "result": "healthy"
+    },
+    {
+      "attempt": 1,
+      "path": "/readyz",
+      "elapsedSeconds": 2.278,
+      "timeoutSeconds": 5,
+      "status": 200,
+      "retryable": false,
+      "result": "healthy"
+    },
+    {
+      "attempt": 2,
+      "path": "/livez",
+      "elapsedSeconds": 5.293,
+      "timeoutSeconds": 5,
+      "status": 200,
+      "retryable": false,
+      "result": "healthy"
+    },
+    {
+      "attempt": 2,
+      "path": "/readyz",
+      "elapsedSeconds": 6.376,
+      "timeoutSeconds": 5,
+      "status": 200,
+      "retryable": false,
+      "result": "healthy"
+    },
+    {
+      "attempt": 3,
+      "path": "/livez",
+      "elapsedSeconds": 9.396,
+      "timeoutSeconds": 5,
+      "status": 200,
+      "retryable": false,
+      "result": "healthy"
+    },
+    {
+      "attempt": 3,
+      "path": "/readyz",
+      "elapsedSeconds": 10.271,
+      "timeoutSeconds": 5,
+      "status": 200,
+      "retryable": false,
+      "result": "healthy"
+    }
+  ],
+  "attempts": 3,
+  "consecutiveSuccesses": 3,
+  "termination": "healthy",
+  "elapsedSeconds": 10.272
+}

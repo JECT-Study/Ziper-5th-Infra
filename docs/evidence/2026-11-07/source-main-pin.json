@@ -1,0 +1,20 @@
+{
+  "checkedAt": "2026-11-06T22:07:11.622481+00:00",
+  "sourceMain": "03f60eeb6206da1b4cd0aa9f05f75f03510e485a",
+  "infraUses": "bcc852e5884bbb0d22f8fd651984441faafcd734",
+  "infraInput": "bcc852e5884bbb0d22f8fd651984441faafcd734",
+  "sourceMainCi": {
+    "conclusion": "success",
+    "databaseId": 42301615516,
+    "headSha": "03f60eeb6206da1b4cd0aa9f05f75f03510e485a",
+    "status": "completed",
+    "url": "https://github.com/JECT-Study/Ziper-5th-Server/actions/runs/42301615516"
+  },
+  "infraRuntimeMainCi": {
+    "runId": 42300015630,
+    "conclusion": "success",
+    "scope": "99 tests before boundary verifier tests"
+  },
+  "newRuntimeDeploymentAttemptedForThisSource": false,
+  "scope": "Remote main SHA, actual file pins and CI read; deployment still blocked by Cloudflare challenge"
+}

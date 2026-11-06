@@ -1,0 +1,25 @@
+{
+  "checkedAt": "2026-11-06T19:49:03.132958+00:00",
+  "repository": "JECT-Study/Ziper-5th-Infra",
+  "branch": "main",
+  "allowForcePushes": false,
+  "allowDeletions": false,
+  "requiredApprovals": 1,
+  "requireCodeOwner": true,
+  "dismissStale": true,
+  "requireLastPushApproval": true,
+  "adminPullRequestBypassAllowed": true,
+  "requiredChecks": [
+    "check"
+  ],
+  "requireUpdatedBase": true,
+  "historyRuleset": {
+    "enforcement": "active",
+    "bypassActorCount": 0,
+    "types": [
+      "non_fast_forward",
+      "deletion"
+    ]
+  },
+  "codeowners": "* @joonamin\n/.github/CODEOWNERS @joonamin\n"
+}

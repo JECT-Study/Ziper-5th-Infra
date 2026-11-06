@@ -1,0 +1,25 @@
+{
+  "recordedAt": "2026-11-06T19:19:22.088549+00:00",
+  "runUrl": "https://github.com/JECT-Study/Ziper-5th-Server/actions/runs/42274738467",
+  "attempt": 2,
+  "sourceSha": "ac11e84e82cc029d36c2791505567f6c4e560cd2",
+  "infraSha": "b9f617699c569c38023ca8561476220357765389",
+  "publication": "SUCCESS",
+  "googleAuthentication": "SUCCESS",
+  "artifactMirrorAndConfigVerification": "SUCCESS",
+  "runtimeDeployment": "DEFERRED",
+  "homeDeployment": "SKIPPED",
+  "discordMessageId": "1568343536104116326",
+  "discordChannelId": "1566809692779323402",
+  "release": {
+    "sourceSha": "ac11e84e82cc029d36c2791505567f6c4e560cd2",
+    "registryImage": "ghcr.io/ject-study/ziper-server",
+    "imageManifestDigest": "sha256:8cecc24c94fbb71a43a718d861e618dbe3e2adbd03bdc94d9c4370792333d732",
+    "imageConfigDigest": "sha256:692b6ed1199eaf8dcaaaaa29adfe9a0060ceb1bfb7a63d6423778cdf13742ecb",
+    "jarSha256": "bc9ed07d6e688c35b6cde39c26ced63bb6c5daf56fd1d4b66961366940dcbc78",
+    "artifactImage": "asia-southeast1-docker.pkg.dev/ziper-production/ziper-releases/ziper-server",
+    "artifactManifestDigest": "sha256:8cecc24c94fbb71a43a718d861e618dbe3e2adbd03bdc94d9c4370792333d732",
+    "image": "asia-southeast1-docker.pkg.dev/ziper-production/ziper-releases/ziper-server@sha256:8cecc24c94fbb71a43a718d861e618dbe3e2adbd03bdc94d9c4370792333d732"
+  },
+  "limitation": "This preparation run did not deploy or validate a running Cloud Run service, home release, Worker, or failover."
+}
