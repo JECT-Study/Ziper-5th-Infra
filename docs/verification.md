@@ -113,6 +113,12 @@ Infra 공개 전환 후 main 보호를 실제 적용·재조회했다: force pus
 
 ## 2026-11-06 22시 수동 배포 진단
 
-Server 실행 [42222169766](https://github.com/JECT-Study/Ziper-5th-Server/actions/runs/42222169766)은 실제 SSH 스트림, OCI config digest 대조와 홈 readiness를 통과했다. 공개 검사는 Tunnel 기동 직후 HTTP 530으로 실패했다. 이후 별도 실제 검사에서 공개 API와 인증한 origin이 릴리스 `263558f6f2cf97ad717f71335c95c49214ae908c`로 200을 반환하고, 인증 없는 origin은 403이었다. Actions 전체 성공과 별도 사후 검증을 구분한다.
+Server 실행 [42222169766](https://github.com/JECT-Study/Ziper-5th-Server/actions/runs/42222169766)은 실제 SSH 스트림, OCI config digest 대조와 홈 readiness를 통과했다. 공개 검사는 cloudflared Started 로그 약 0.443초 뒤 HTTP 530으로 실패했다. 당시 상세 오류가 없어 Tunnel 기동 지연은 가설이며 사후 정상 응답으로 과거 원인을 확정하지 않는다. 이후 별도 실제 검사에서 공개 API와 인증한 origin이 릴리스 `263558f6f2cf97ad717f71335c95c49214ae908c`로 200을 반환하고, 인증 없는 origin은 403이었다. Actions 전체 성공과 별도 사후 검증을 구분한다.
 
 Worker 실행 [42222983368](https://github.com/JECT-Study/Ziper-5th-Infra/actions/runs/42222983368)은 origin 사전 검사에서 실패하여 Worker 업로드를 실행하지 않았다. 기존 검사기가 모든 예외를 같은 문구로 가려 원인을 확정할 수 없었다. 단계·상태 코드를 기록하는 읽기 진단을 추가했으며 운영 원인은 다음 실행 증거로 판정한다.
+
+## 공개 readiness 수정의 판정 범위
+
+확정된 문제는 Accept 미지정과 application/json 전용 검사 간의 불일치, 그리고 기존 배포 흐름의 공개 준비 대기 부재다. `/livez`·`/readyz` 경로는 유지한다. 운영 중 관찰한 200과 해당 SHA의 일치는 사후 증거이며 실행 42222169766의 실패를 성공으로 바꾸지 않는다. Infra main cf8e077의 wrapper는 ValueError까지 재시도하므로 인증·계약 위반을 즉시 종료하는 요청 조건을 만족하지 못해 제거했다. 오류 분류와 가상 시간 검사는 Server 기존 health 검사·테스트로 모았다.
+
+변경 후 로컬 검사와 CI 결과는 PR에 기록한다. 새 정책의 실제 운영 530 복구, 새로운 Server/Infra 조합의 main 배포 및 성공 Discord 알림은 이번 작업에서 실행하지 않았다. Cloud Run 전환·600초 목표·전체 FSM 검증과도 별개의 범위다.

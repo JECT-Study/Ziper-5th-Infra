@@ -18,3 +18,4 @@
 - [0003 소유자 리뷰와 관리자 bypass](adr/0003-owner-review-and-admin-bypass.md)
 - [0004 SSH release 바이너리 입력을 WSL에 직접 전달](adr/0004-native-ssh-release-input.md)
 - [0005 전송·로드 검증의 OCI config digest](adr/0005-portable-image-identity.md)
+- [0006 공개 readiness의 제한된 준비 시간과 오류 분류](adr/0006-bounded-public-readiness.md)
