@@ -51,6 +51,10 @@ class Recovery:
             labels = record['Config']['Labels']
             if record['Id'] != container_id or labels.get('com.docker.compose.project') != PROJECT or labels.get('com.docker.compose.service') != SERVICE:
                 raise Refused('container_scope_mismatch')
+            releases = [value.removeprefix('SENTRY_RELEASE=') for value in record['Config'].get('Env', [])
+                        if value.startswith('SENTRY_RELEASE=')]
+            if releases != [self.version()]:
+                raise Refused('container_release_mismatch')
             return {'containerId': container_id, 'running': record['State']['Running'] is True}
         except (KeyError, TypeError, json.JSONDecodeError):
             raise Refused('invalid_container_metadata') from None
@@ -91,7 +95,12 @@ class Recovery:
                 fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
             except BlockingIOError:
                 raise Refused('another_recovery_operation_is_active') from None
-            yield
+            with (self.root / 'deploy.lock').open('a') as deploy_lock:
+                try:
+                    fcntl.flock(deploy_lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                except BlockingIOError:
+                    raise Refused('ziper_deployment_is_active') from None
+                yield
 
     def lease(self, test_id=None):
         lease = self.read(self.lease_path)

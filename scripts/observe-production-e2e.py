@@ -82,13 +82,15 @@ def read_url(url, *, token=None, ops=False, timeout=10):
             if len(body) > limit:
                 raise ValueError('response_too_large')
             raw = json.loads(body)
+            if response.headers.get_content_type() != 'application/json':
+                raise ValueError('unexpected_content_type')
             if ops:
                 return {**result, **ops_snapshot(raw)}
             release = response.headers.get('X-Ziper-Release')
             upstream = response.headers.get('X-Ziper-Origin')
             result.update(origin=upstream if upstream in ('home', 'cloudrun', 'local') else None,
                           release=release if isinstance(release, str) and re.fullmatch('[a-f0-9]{40}', release) else None,
-                          upOnly=raw == {'status': 'UP'}, noStore='no-store' in response.headers.get('Cache-Control', '').lower(),
+                          upOnly=raw == {'status': 'UP'}, noStore='no-store' in [item.strip() for item in response.headers.get('Cache-Control', '').lower().split(',')],
                           cached=response.headers.get('CF-Cache-Status', '').upper() in ('HIT', 'STALE', 'UPDATING'),
                           sessionCookie=response.headers.get('Set-Cookie') is not None)
             return result
@@ -192,6 +194,8 @@ def main():
     args = parser.parse_args()
     try:
         public_origin = origin(args.public_origin)
+        if args.token_file and (args.token_file.is_symlink() or args.token_file.stat().st_mode & 0o077):
+            raise ValueError('token_file_must_be_private')
         token = args.token_file.read_text().strip() if args.token_file else os.environ.get('OPS_READ_TOKEN', '')
         if len(token) < 32 or not re.fullmatch('[a-f0-9]{40}', args.release) or not 1 <= args.seconds <= 14400 or not 1 <= args.interval <= 60:
             raise ValueError('invalid_observer_configuration')

@@ -35,7 +35,7 @@ class Docker:
             value = self.container + '\n'
         elif args[0] == 'inspect':
             value = json.dumps([{'Id': self.container, 'Config': {'Labels': {'com.docker.compose.project': self.project,
-                               'com.docker.compose.service': 'app'}, 'Env': ['TOKEN=private-marker']},
+                               'com.docker.compose.service': 'app'}, 'Env': ['TOKEN=private-marker', 'SENTRY_RELEASE=' + VERSION]},
                                 'State': {'Running': self.running}}])
         elif args[0] == 'stop':
             self.running = False
