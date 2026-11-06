@@ -20,13 +20,19 @@ permissions:
   contents: read
   actions: read
 jobs:
-  deploy:
+  publish:
     if: github.repository == 'JECT-Study/Ziper-5th-Server' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     environment: production
-    timeout-minutes: 25
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      actions: read
+      packages: write
     outputs:
       deferred: ${{ steps.window.outputs.deferred }}
+      image: ${{ steps.registry.outputs.image }}
+      digest: ${{ steps.registry.outputs.digest }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -67,11 +73,44 @@ jobs:
           set -euo pipefail
           run_id=$(gh api --method GET "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs" -f head_sha="$GITHUB_SHA" -f branch=main -f event=push -f status=success --jq '.workflow_runs[0].id')
           gh run download "$run_id" --repo "$GITHUB_REPOSITORY" --name tested-release --dir server/build
-      - name: Package tested image
+      - name: Publish or verify immutable GHCR release
+        id: registry
         if: steps.window.outputs.deferred != 'true'
-        run: python3 scripts/package-home-release.py "$GITHUB_SHA"
+        run: python3 scripts/publish-registry-release.py "$GITHUB_SHA"
+        env:
+          GHCR_TOKEN: ${{ github.token }}
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        if: steps.window.outputs.deferred != 'true'
+        with:
+          name: registry-release
+          path: dist/registry-release.json
+          if-no-files-found: error
+  deploy:
+    needs: publish
+    if: needs.publish.result == 'success' && needs.publish.outputs.deferred != 'true'
+    runs-on: ubuntu-24.04
+    environment: production
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      actions: read
+      packages: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: JECT-Study/Ziper-5th-Infra
+          ref: ${{ inputs.infra_sha }}
+          persist-credentials: false
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+          path: server
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        with:
+          name: registry-release
+          path: dist
       - name: Install pinned cloudflared
-        if: steps.window.outputs.deferred != 'true'
         run: |
           set -euo pipefail
           curl --fail --silent --show-error --location --output "$RUNNER_TEMP/cloudflared" "https://github.com/cloudflare/cloudflared/releases/download/2026.10.7/cloudflared-linux-amd64"
@@ -80,14 +119,14 @@ jobs:
           chmod 700 "$RUNNER_TEMP/cloudflared"
         env:
           CLOUDFLARED_SHA256: 1f99fb518b83dec2ba8d870a7cc991d82a77e6196295a3d2754ba17ab9f91872
-      - name: Deliver immutable release through restricted SSH receiver
-        if: steps.window.outputs.deferred != 'true'
+      - name: Pull immutable GHCR release through restricted SSH receiver
         env:
           CI_KEY: ${{ secrets.ZIPER_CI_SSH_KEY }}
           TUNNEL_SERVICE_TOKEN_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
           TUNNEL_SERVICE_TOKEN_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
           SSH_USER: ${{ vars.ZIPER_SSH_USER }}
           SSH_KNOWN_HOSTS_B64: ${{ secrets.ZIPER_SSH_KNOWN_HOSTS_B64 }}
+          GHCR_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           umask 077
@@ -97,10 +136,8 @@ jobs:
           test -n "$SSH_USER"
           test -n "$SSH_KNOWN_HOSTS_B64"
           connection=(ssh -T -o BatchMode=yes -o StrictHostKeyChecking=yes -o "UserKnownHostsFile=$RUNNER_TEMP/ziper-known-hosts" -o "ProxyCommand=$RUNNER_TEMP/cloudflared access ssh --hostname ssh.joonamin.dev" -i "$RUNNER_TEMP/ziper-key" "$SSH_USER@ssh.joonamin.dev")
-          python3 scripts/verify-ssh-stream.py "${connection[@]}"
-          "${connection[@]}" "deploy $GITHUB_SHA" < dist/home-release.tgz
+          python3 scripts/deliver-registry-release.py "${connection[@]}"
       - name: Verify public readiness
-        if: steps.window.outputs.deferred != 'true'
         run: >-
           timeout --signal=KILL 180s python3 server/scripts/verify-public-health.py
           --url https://api-ziper.joonamin.dev
@@ -113,8 +150,8 @@ jobs:
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         if: always()
         with:
-          name: receiver-stream-proof
-          path: dist/receiver-stream-proof.json
+          name: receiver-control-proof
+          path: dist/receiver-control-proof.json
           if-no-files-found: ignore
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         if: always()
@@ -126,10 +163,10 @@ jobs:
         if: always()
         with:
           name: release-manifest
-          path: dist/home-release/manifest.json
+          path: dist/registry-release.json
           if-no-files-found: ignore
   notify:
-    needs: deploy
+    needs: [publish, deploy]
     if: always() && github.repository == 'JECT-Study/Ziper-5th-Server' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     environment: production
@@ -148,4 +185,4 @@ jobs:
         env:
           DISCORD_DEPLOY_WEBHOOK_URL: ${{ secrets.DISCORD_DEPLOY_WEBHOOK_URL }}
           SOURCE_SHA: ${{ github.sha }}
-          DEPLOY_RESULT: ${{ needs.deploy.outputs.deferred == 'true' && 'deferred' || needs.deploy.result == 'success' && 'success' || 'failure' }}
+          DEPLOY_RESULT: ${{ needs.publish.outputs.deferred == 'true' && 'deferred' || needs.deploy.result == 'success' && 'success' || 'failure' }}

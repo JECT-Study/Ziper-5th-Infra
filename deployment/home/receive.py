@@ -10,6 +10,7 @@ import sys
 import tarfile
 import tempfile
 from image_identity import image_config_digest, loaded_image_config_digest
+from registry_release import REPOSITORY, file_sha256, read_payload
 
 def validate_members(members):
     expected = {'image.tar.gz', 'manifest.json', 'compose.yml', 'deploy.sh'}
@@ -92,10 +93,73 @@ def deploy(version, archive):
         subprocess.run(['bash', str(trusted / 'deploy.sh'), version], env=env, check=True)
 
 
+def deploy_registry(version, source, root=Path('/opt/ziper')):
+    manifest, username, token = read_payload(source, version)
+    trusted = root / 'ci'
+    release = root / 'releases' / version
+    metadata = (json.dumps(manifest, sort_keys=True) + '\n').encode()
+    existing = release / 'manifest.json'
+    if existing.exists() and existing.read_bytes() != metadata:
+        raise SystemExit('Immutable release manifest mismatch')
+    with tempfile.TemporaryDirectory(dir=root) as temporary:
+        stage = Path(temporary)
+        os.chmod(stage, 0o700)
+        env = dict(os.environ, DOCKER_CONFIG=str(stage / 'docker'))
+        env.pop('GITHUB_TOKEN', None)
+        env.pop('GHCR_TOKEN', None)
+        image = REPOSITORY + '@' + manifest['imageManifestDigest']
+        # The job-scoped read credential is only stdin and a private temporary config.
+        login = subprocess.run(['docker', 'login', 'ghcr.io', '--username', username, '--password-stdin'],
+                               input=(token + '\n').encode(), env=env, capture_output=True)
+        token = None
+        if login.returncode:
+            raise SystemExit('Registry authentication failed')
+        pull = subprocess.run(['docker', 'pull', '--platform', 'linux/amd64', image],
+                              env=env, capture_output=True)
+        if pull.returncode:
+            raise SystemExit('Registry image pull failed')
+        local = 'ziper-server:' + version
+        subprocess.run(['docker', 'tag', image, local], env=env, check=True, capture_output=True)
+        if loaded_image_config_digest(local, env, root) != manifest['imageConfigDigest']:
+            raise SystemExit('Pulled image config differs from manifest')
+        container = subprocess.check_output(['docker', 'create', local], env=env, text=True).strip()
+        try:
+            extracted = stage / 'app.jar'
+            subprocess.run(['docker', 'cp', container + ':/app/app.jar', str(extracted)],
+                           env=env, check=True, capture_output=True)
+            if file_sha256(extracted) != manifest['jarSha256']:
+                raise SystemExit('Pulled image JAR differs from tested artifact')
+        finally:
+            subprocess.run(['docker', 'rm', container], env=env, check=True, capture_output=True)
+        actual = subprocess.check_output(['docker', 'image', 'inspect', '--format', '{{.Id}}', local],
+                                         env=env, text=True).strip()
+        if not re.fullmatch(r'sha256:[a-f0-9]{64}', actual):
+            raise SystemExit('Invalid local engine identity')
+        release.mkdir(parents=True, exist_ok=True, mode=0o700)
+        for filename, data in [('manifest.json', metadata), ('compose.yml', (trusted / 'compose.yml').read_bytes()),
+                               ('deploy.sh', (trusted / 'deploy.sh').read_bytes())]:
+            target = release / filename
+            if target.exists() and target.read_bytes() != data:
+                raise SystemExit('Immutable release already exists with different content')
+            target.write_bytes(data)
+            target.chmod(0o600)
+        (release / 'image-id').write_text(actual + '\n')
+        print('ZIPER_REGISTRY_MANIFEST_DIGEST=' + manifest['imageManifestDigest'], flush=True)
+        print('ZIPER_IMAGE_CONFIG_DIGEST=' + manifest['imageConfigDigest'], flush=True)
+    # Authentication is already removed; compose uses the verified local tag.
+    env = dict(os.environ, DOCKER_CONFIG=str(root / 'docker-client'))
+    subprocess.run(['bash', str(trusted / 'deploy.sh'), version], env=env, check=True)
+
+
 def main():
     command = ' '.join(sys.argv[1:])
     if command == 'check':
         print('ZIPER_CI_RECEIVER_READY', flush=True)
+        return
+    registry_match = re.fullmatch(r'deploy-registry ([0-9a-f]{40})', command)
+    if registry_match is not None:
+        os.umask(0o077)
+        deploy_registry(registry_match[1], sys.stdin.buffer)
         return
     match = re.fullmatch(r'deploy ([0-9a-f]{40})', command)
     if match is None:

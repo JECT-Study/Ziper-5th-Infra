@@ -1,5 +1,15 @@
 # 운영
 
+## GHCR 홈 이미지 전달
+
+새 deploy-home workflow는 publish → deploy → notify로 나눈다. publish는 packages:write로 tested-release 이미지를 GHCR의 source SHA tag에 발행하고 registry-release artifact를 만든다. 기존 tag는 digest를 조회해 JAR·소스 번들 검증 후 재사용하며 덮어쓰지 않는다. 404 이외의 registry 조회 오류는 중단한다. repo 이름은 ghcr.io/ject-study/ziper-server로 고정한다.
+
+deploy job은 packages:read의 별도 job 토큰과 작은 metadata JSON만 SSH로 전달한다. 수신기의 deploy-registry는 정확한 digest를 pull하고 OCI config·JAR를 검증한 뒤 기존 신뢰 compose/deploy를 실행한다. Docker 인증은 임시 config에만 남고 종료 시 제거한다. runtime은 검증한 로컬 이미지만 사용한다. 기존 image archive 전송 명령은 호환용이며 새 workflow에서 호출하지 않는다.
+
+홈 `/opt/ziper/ci`에는 receive.py·image_identity.py·registry_release.py 세 파일을 함께 설치한다. Source caller에는 packages:write 권한이 필요하며 두 Infra pin을 성공한 실제 main SHA로 함께 갱신한다. `publish.outputs.image`와 `digest`, `registry-release` artifact는 Cloud Run 경로가 소비할 수 있다. 백업을 연결할 때 publish와 home deploy 사이에 검증 gate를 두며 홈만 성공한 결과를 쌍 배포로 기록하지 않는다. 정책은 [ADR 0007](adr/0007-ghcr-home-delivery.md)을 따른다.
+
+새 artifact의 receiver-control-proof에는 check·일반 명령 거부·registry deploy 판정과 payload 크기·정적 실패 코드만 저장한다. 토큰·전체 stderr·응답 본문은 저장하지 않는다. 실제 발행·pull·readiness 결과는 실행별 증거를 따른다.
+
 이 저장소는 Worker·DO·홈 배포 수신기·재사용 배포 workflow의 소유 저장소다. Server는 수동 실행 진입점과 애플리케이션을 관리한다. 2026-11-06 홈 릴리스가 실행되었고 공개·보호 origin의 HTTP 200을 확인했다. Worker·DO·route와 Cloud Run의 완료 여부는 실행별 증거를 따른다. 현재 실행 결과와 제한은 [검증 문서](verification.md)와 [nightly walkthrough](nightly-walkthrough-2026-11-06.md)를 따른다.
 
 ## 배포 전제
