@@ -32,3 +32,5 @@ Cloud Run은 요청 기반 CPU·min0/max1·1CPU/1GiB·CPU boost 끔으로 시작
 ## 영향과 한계
 
 자격·URL·revision·cap·자동 복구·실제 API 결과를 각각 검증해야 한다. 06시 BIOS 부팅과 Docker/WSL 자동 기동은 별도 관측 대상이며 SSH로 수동 기동한 것을 자동 복구로 기록하지 않는다. 예정 구간 routing은 실제 회로 failover와 구분한다. 이전 실패와 새 코드의 통과를 덮어쓰지 않으며 실제 실행 전에는 운영 E2E 통과를 주장하지 않는다.
+
+복구 lease의 arm부터 해소까지 receiver·trusted deploy·control installer는 공통 잠금 아래 배포를 거부한다. 명령 단위의 잠금만으로는 lease 사이의 배포 교체를 막을 수 없어 존재하는 lease를 별도로 확인한다. 만료·오염·symlink 상태도 자동 무시하지 않는다.

@@ -32,6 +32,10 @@ else
     exec 9>"$root/deploy.lock"
 fi
 flock -n 9 || { echo 'Another Ziper deployment is active' >&2; exit 1; }
+if [ -e "$root/ops/recovery-lease.json" ] || [ -L "$root/ops/recovery-lease.json" ]; then
+    echo 'A Ziper recovery lease must be resolved before deployment' >&2
+    exit 1
+fi
 unset COMPOSE_FILE COMPOSE_PROJECT_NAME COMPOSE_PROFILES
 unset ZIPER_IMAGE ZIPER_VERSION ZIPER_PRIVATE_DIR SENTRY_RELEASE
 export ZIPER_PRIVATE_DIR="$root/private"

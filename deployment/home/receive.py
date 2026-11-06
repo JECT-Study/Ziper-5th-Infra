@@ -29,6 +29,9 @@ def deploy_registry(version, source, root=Path('/opt/ziper')):
     ensure_runtime_window(root)
     with deployment_lock(root) as lock_fd:
         ensure_runtime_window(root)
+        lease = root / 'ops' / 'recovery-lease.json'
+        if lease.exists() or lease.is_symlink():
+            raise SystemExit('A Ziper recovery lease must be resolved before deployment')
         deploy_registry_locked(version, manifest, username, token, root, lock_fd)
 
 

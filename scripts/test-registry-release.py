@@ -218,6 +218,33 @@ class RegistryTests(unittest.TestCase):
         self.assertEqual((release / 'manifest.json').read_bytes(), previous)
         self.assertEqual(f.calls(), [])
 
+    def test_recovery_lease_prevents_registry_login_and_runtime_mutation(self):
+        for symlink in (False, True):
+            with self.subTest(symlink=symlink):
+                f = self.fixture()
+                (f.root / 'ops').mkdir()
+                lease = f.root / 'ops/recovery-lease.json'
+                if symlink:
+                    lease.symlink_to('missing-lease')
+                else:
+                    lease.write_text('{"expiresAt":0}')
+                with patch.dict(os.environ, f.env, clear=True), self.assertRaises(SystemExit) as error:
+                    receiver.deploy_registry(VERSION, io.BytesIO(payload()), f.root)
+                self.assertIn('recovery lease', str(error.exception))
+                self.assertEqual(f.calls(), [])
+                self.assertFalse((f.root / 'releases' / VERSION).exists())
+
+    def test_trusted_deploy_also_refuses_an_unresolved_recovery_lease(self):
+        f = self.fixture()
+        f.release(VERSION, OLD_ID)
+        (f.root / 'ops').mkdir()
+        (f.root / 'ops/recovery-lease.json').write_text('{"expiresAt":0}')
+        result = subprocess.run(['bash', str(HOME / 'deploy.sh'), VERSION], env=f.env,
+                                capture_output=True, timeout=5)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn(b'recovery lease', result.stderr)
+        self.assertEqual(f.calls(), [])
+
     def test_cloudflared_failure_restores_previous_runtime_and_record(self):
         f = self.fixture()
         f.release(PREVIOUS, OLD_ID)
