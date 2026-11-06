@@ -126,3 +126,5 @@ WIF 실패 시 `scripts/inspect-oidc-claims.py`는 GitHub 발급 토큰을 메�
 2026-11-07 GitHub OIDC 설정 API에서 Server 저장소의 `use_immutable_subject=true`와 owner/repository ID를 포함한 prefix를 확인했습니다. [GitHub 공식 설명](https://docs.github.com/en/actions/reference/security/oidc#immutable-subject-claims)에 맞춰 WIF의 정확한 subject를 갱신하며 repository ID·main ref·production 환경 제한을 보존합니다. bootstrap은 알려진 구형 조건만 이행하고 다른 조건·issuer·mapping 변경은 중단합니다. 갱신 뒤 provider readback과 실제 Actions 인증을 각각 확인합니다.
 
 독립 복구 timer 정의는 `deployment/home/systemd/`가 소유합니다. 검토된 설치 후 root에서 `systemctl daemon-reload`와 `systemctl enable --now ziper-recovery.timer`를 명시 실행하고 실제 다음 tick을 기다립니다. timer는 매분 root 전용 lease만 확인하고 lease가 없으면 앱을 건드리지 않습니다. `arm --seconds 0`의 lease 제거와 `already_running` 결과를 확인하기 전에는 장애를 주입하지 않습니다.
+
+복구 lease가 존재하면 만료 여부와 관계없이 receiver·trusted deploy·control installer가 공통 deploy.lock 아래에서 거부합니다. 잘못된 파일이나 끊어진 symlink도 진행 허가로 취급하지 않습니다. 복구 timer/운영자의 검증된 recover가 lease를 해소한 후에만 배포합니다. 이로써 arm부터 자동 복구까지 컨테이너가 다른 배포로 교체되는 경합을 막습니다.

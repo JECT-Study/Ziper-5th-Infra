@@ -57,6 +57,8 @@ from pathlib import Path
 items=METADATA
 with open('/opt/ziper/deploy.lock','a+b') as lock:
  fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
+ lease=Path('/opt/ziper/ops/recovery-lease.json')
+ if lease.exists() or lease.is_symlink():raise RuntimeError('resolve_recovery_lease_before_control_installation')
  for item in items:
   p=Path(item['target']+'.install-SHA');assert p.is_file() and not p.is_symlink();assert hashlib.sha256(p.read_bytes()).hexdigest()==item['sha256']
  for item in items:
