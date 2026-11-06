@@ -82,9 +82,10 @@ if [ -f "$root/current-version" ]; then
 fi
 select_release "$version"
 compose config --quiet
-if compose up -d --no-build --pull never app && ready && runtime_window && compose up -d --no-build cloudflared; then
-    printf '%s\n' "$version" > "$root/current-version.next"
-    mv "$root/current-version.next" "$root/current-version"
+commit_release() {
+    printf '%s\n' "$version" > "$root/current-version.next" && mv "$root/current-version.next" "$root/current-version"
+}
+if compose up -d --no-build --pull never app && ready && runtime_window && compose up -d --no-build cloudflared && commit_release; then
     printf 'Ziper release %s is ready; verify the public endpoint separately.\n' "$version"
     exit 0
 fi

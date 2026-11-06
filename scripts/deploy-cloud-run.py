@@ -44,7 +44,11 @@ def cli(args, *, env=None, data=None, missing=False, timeout=900, run=subprocess
         stderr = result.stderr.decode(errors='replace') if isinstance(result.stderr, bytes) else result.stderr
         if missing and re.search(r'\bNOT_FOUND\b', stderr or ''):
             return None
-        raise Refused('command_failed_or_outcome_unknown')
+        family = 'gcloud' if args[0] == 'gcloud' else 'docker'
+        operation = '_'.join(args[1:4] if family == 'gcloud' else args[1:2])
+        codes = ('PERMISSION_DENIED', 'UNAUTHENTICATED', 'NOT_FOUND', 'INVALID_ARGUMENT', 'RESOURCE_EXHAUSTED', 'ALREADY_EXISTS', 'FAILED_PRECONDITION')
+        code = next((value for value in codes if value in (stderr or '')), 'outcome_unknown')
+        raise Refused(family + '_' + operation + '_' + code)
     return result.stdout.decode() if isinstance(result.stdout, bytes) else result.stdout
 
 
@@ -212,7 +216,7 @@ def deployment_allowed(now=None):
 
 def desired_env(source):
     return {'SPRING_PROFILES_ACTIVE': 'prod',
-            'SPRING_CONFIG_IMPORT': 'file:/run/ziper/config/application.properties',
+            'SPRING_CONFIG_IMPORT': 'file:/run/ziper-config/application.properties',
             'SPRING_FLYWAY_ENABLED': 'false', 'APP_RUNTIME_MODE': 'server',
             'APP_MONITORING_METRICS_ENABLED': 'false', 'APP_MONITORING_ORIGIN': 'cloudrun',
             'SENTRY_ENVIRONMENT': 'prod', 'SENTRY_RELEASE': source,
@@ -342,7 +346,7 @@ def deploy(release, output_path):
                '--revision-suffix=s' + release['sourceSha'],
                '--startup-probe=httpGet.path=/readyz,httpGet.port=8080,timeoutSeconds=3,periodSeconds=5,failureThreshold=30',
                '--set-env-vars=' + env,
-               '--set-secrets=/run/ziper/config/application.properties=ziper-runtime-properties:1,/run/ziper/db-ca.pem=ziper-db-ca:1',
+               '--set-secrets=/run/ziper-config/application.properties=ziper-runtime-properties:1,/run/ziper/db-ca.pem=ziper-db-ca:1',
                '--labels=service=ziper,source-sha=' + release['sourceSha'])
         resource = resource_value(gcloud('run', 'services', 'describe', SERVICE, '--region', REGION))
         revision_data = resource_value(gcloud('run', 'revisions', 'describe', revision, '--region', REGION))

@@ -20,3 +20,7 @@
 - [0005 전송·로드 검증의 OCI config digest](adr/0005-portable-image-identity.md)
 - [0006 공개 readiness의 제한된 준비 시간과 오류 분류](adr/0006-bounded-public-readiness.md)
 - [0007 GHCR digest pull로 홈 이미지 전달](adr/0007-ghcr-home-delivery.md)
+
+- [0008 비공개 Cloud Run 백업과 운영 장애 검증](adr/0008-private-cloud-run-and-production-e2e.md)
+
+이번 운영 준비의 [계획](evidence/2026-11-07/plan.md)과 [결정 로그](evidence/2026-11-07/decisions.tsv)는 실제 실행 증거를 추가하며 유지합니다.

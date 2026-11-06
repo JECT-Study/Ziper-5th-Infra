@@ -110,3 +110,11 @@ cloudflared 시작 실패도 app/readiness 실패와 같은 롤백으로 처리�
 보류 시간에도 GHCR 발행·재검증은 가능하지만 runtime 변경은 하지 않는다. publish 시작 당시와 home mutation 직전 workflow 시간을 구분하며 수신기도 production.json으로 재검사한다. pull 중 02:30 경계를 넘으면 release tag·컨테이너를 변경하지 않고 보류한다. 공개 readiness 단계는 보류 시 건너뛰고 Discord에도 보류를 전달한다. publish 자체가 실패했다면 보류 시간에도 실패 알림으로 기록한다.
 
 허용 시간에 이미 시작한 배포가 실패하면 이전 상태 복구는 보류 구간에도 시도한다. 복구를 이용해 새 release를 추가 배포하지 않으며, 이 경우 결과는 성공이나 단순 보류가 아닌 실패·복구 판정으로 기록한다.
+
+## 비공개 백업과 운영 검증 준비
+
+쌍 배포는 GHCR 발행 → AR 미러 준비 → protected home 확인 → Cloud Run runtime·private probes → 홈 runtime·public probes 순서다. 준비 발행은 보류 중에도 가능하며 런타임은 각 변경 직전의 시간 가드로 차단한다. 준비 오류를 deferred로 숨기지 않는다. 배포 성공 알림은 양쪽 readiness가 통과한 때만 paired다.
+
+GCP 부트스트랩은 `ZIPER_GCLOUD=<gcloud 경로> python3 scripts/bootstrap-gcp-production.py`로 명시 실행한다. 비밀 원본은 로컬 .config/ziper/deployment이고 값은 출력하지 않는다. source protection과 전용 WIF 조건을 먼저 설정하며 CI 장기 GCP 키는 만들지 않는다. 비용 cap은 Cloud Run 범위이며 지출 0원의 보장은 아니다.
+
+`deployment/home/recovery.py`는 root 전용 lease로 집어 app만 복구한다. 독립 systemd timer를 설치하고, 실행 중인 app에 seconds0 lease를 arm하여 다음 tick의 already_running과 lease 제거를 실제 대조한 후에만 stop한다. `scripts/observe-production-e2e.py`는 token을 private 파일에서 읽고 origin·release·분 표본·전이·단조 시계를 보존한다. 예정 backup은 circuit failover 성공으로 계산하지 않는다. 자세한 결정은 [ADR 0008](adr/0008-private-cloud-run-and-production-e2e.md), 실행 범위는 PR #1과 날짜별 증거를 따른다.
