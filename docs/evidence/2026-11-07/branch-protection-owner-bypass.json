@@ -35,5 +35,7 @@
       "deletion"
     ]
   },
-  "scope": "Configured individual PR allowance and admin enforcement; readback preserves checks/history. Other administrator login or destructive force-push not tested."
+  "scope": "Configured individual PR allowance and admin enforcement; readback preserves checks/history. Other administrator login or destructive force-push not tested.",
+  "requireConversationResolution": true,
+  "conversationAndAllowanceRecheckedAt": "2026-11-06T22:19:42.140570+00:00"
 }

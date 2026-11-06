@@ -23,7 +23,7 @@
 | 독립 복구 timer | 무해한 seconds0 lease 이후 다음 systemd tick이 already_running을 기록하고 lease 해소 | [recovery-timer-setup.json](evidence/2026-11-07/recovery-timer-setup.json), [proof](evidence/2026-11-07/recovery-timer-proof.json). 실제 정지 앱 복구는 미실험 |
 | Discord | 준비 보류 알림 두 건의 지정 채널·메시지 ID 확인 | [preparation-repeat.json](evidence/2026-11-07/preparation-repeat.json). 새 쌍 배포 성공 알림·사용자 클라이언트 표시·Sentry issue bot 알림은 별개 |
 | Infra main 보호 | 관리자에게도 보호 강제, PR 예외는 joonamin 한 명. CODEOWNERS·리뷰1명·stale 무효화·마지막 push 승인·strict CI·force push/삭제 금지 보존 | [개인 예외 재조회](evidence/2026-11-07/branch-protection-owner-bypass.json), [ADR0010](adr/0010-owner-only-review-bypass.md). [이전 snapshot](evidence/2026-11-07/branch-protection.json)은 관리자 전체 우회였다. 다른 관리자 로그인 거부·파괴적 force push는 직접 실험하지 않음 |
-| Sentry 접근 구성 | Sponsored Team, 비공개 프로젝트, Open Membership 꺼짐, ziper팀→ziper-server, fakedev팀→client/server 조회 | [sentry-scope.json](evidence/2026-11-07/sentry-scope.json). 초대 명단과 실제 다른 구성원 로그인 E2E는 미검증 |
+| Sentry 접근 구성 | Sponsored Team, 비공개 프로젝트, Open Membership 꺼짐, ziper팀→ziper-server, fakedev팀→client/server 조회 | [sentry-scope.json](evidence/2026-11-07/sentry-scope.json). 초대 명단·다른 구성원 로그인 E2E·이번 실행의 실제 오류 수집과 Sentry issue 알림은 미검증 |
 | Sentry Uptime | 무료1개를 기존 tocktock이 사용 중, 집어 monitor0개 | 같은 증거. 기존 monitor 보존·유료 활성화 없음. 미저장 양식은 운영 monitor가 아님 |
 | 로컬 회로·배포 검사 | Workers32·Node10·Python59, 합계101개와 타입·린트·번들 통과 | runtime pin의 [Infra main CI42300015630](https://github.com/JECT-Study/Ziper-5th-Infra/actions/runs/42300015630)은99개, 이후 경계 probe 비밀 비노출2개 추가. 가짜 시간·응답·CLI와 실제 로컬 workerd/SQLite 범위. 운영 failover는 미검증 |
 
