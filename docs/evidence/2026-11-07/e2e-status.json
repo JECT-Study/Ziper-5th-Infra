@@ -1,5 +1,5 @@
 {
-  "checkedAt": "2026-11-06T22:39:31.202416+00:00",
+  "checkedAt": "2026-11-06T23:06:57.853697+00:00",
   "productionE2eComplete": false,
   "sourceMain": "03f60eeb6206da1b4cd0aa9f05f75f03510e485a",
   "infraRuntimePin": "bcc852e5884bbb0d22f8fd651984441faafcd734",
@@ -28,15 +28,16 @@
     "credentialsMatchReference": true,
     "cloudflareChallenge": true,
     "exactProviderRuleIdentified": false,
-    "requires": "Read-only security API diagnosis pending; administrative session or a dedicated credential may still be needed"
+    "requires": "Cloudflare administrative session or dedicated Account Analytics Read plus Zone Read credential; existing worker credential was denied security-event authorization"
   },
   "tests": {
-    "latestLocalTotal": 103,
+    "latestLocalTotal": 106,
     "workers": 32,
     "node": 10,
-    "python": 61,
+    "python": 64,
     "runtimePinCiTotal": 99,
     "nestedDockerRestartProofSeparate": true
   },
-  "scope": "Receipts refer to observations at their individual timestamps. CI and preparation are not production deployment or fault E2E."
+  "scope": "Receipts refer to observations at their individual timestamps. CI and preparation are not production deployment or fault E2E.",
+  "existingHomeRestartPolicyMigration": "Read-only plan verified; application pending reviewed main CI"
 }

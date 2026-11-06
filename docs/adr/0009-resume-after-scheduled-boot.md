@@ -13,6 +13,8 @@
 
 기존 릴리스 파일과 manifest는 수정하지 않는다. 새 Infra main CI와 두 Source pin 갱신을 완료한 뒤 새 Source SHA로 배포하여 컨테이너의 실제 RestartPolicy를 읽어 대조한다. 기존 종료 상태의 복구는 기록된 버전·image ID·SENTRY_RELEASE·project/service labels를 대조하고 공통 lock 아래 해당 두 컨테이너만 start한다.
 
+새 이미지 배포가 외부 challenge로 막힌 동안 기존 두 컨테이너의 runtime 정책만 정합하는 절차는 [ADR0011](0011-reconcile-existing-restart-policy.md)을 따른다. 기존 이미지·파일은 보존하고 적용 전후 readback과 전체 다음 장비 부팅을 구분한다.
+
 ## 대안
 
 - unless-stopped 유지: 종료 상태가 다음 부팅에도 유지되는 현재 사례를 수용하지 않는다.

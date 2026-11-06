@@ -25,7 +25,7 @@
 | Infra main 보호 | 관리자에게도 보호 강제, PR 예외는 joonamin 한 명. CODEOWNERS·리뷰1명·stale 무효화·마지막 push 승인·strict CI·force push/삭제 금지 보존 | [개인 예외 재조회](evidence/2026-11-07/branch-protection-owner-bypass.json), [ADR0010](adr/0010-owner-only-review-bypass.md). [이전 snapshot](evidence/2026-11-07/branch-protection.json)은 관리자 전체 우회였다. 다른 관리자 로그인 거부·파괴적 force push는 직접 실험하지 않음 |
 | Sentry 접근 구성 | Sponsored Team, 비공개 프로젝트, Open Membership 꺼짐, ziper팀→ziper-server, fakedev팀→client/server 조회 | [sentry-scope.json](evidence/2026-11-07/sentry-scope.json). 초대 명단·다른 구성원 로그인 E2E·이번 실행의 실제 오류 수집과 Sentry issue 알림은 미검증 |
 | Sentry Uptime | 무료1개를 기존 tocktock이 사용 중, 집어 monitor0개 | 같은 증거. 기존 monitor 보존·유료 활성화 없음. 미저장 양식은 운영 monitor가 아님 |
-| 로컬 회로·배포 검사 | Workers32·Node10·Python61, 합계103개와 타입·린트·번들 통과 | runtime pin의 [Infra main CI42300015630](https://github.com/JECT-Study/Ziper-5th-Infra/actions/runs/42300015630)은99개, 이후 경계 probe와 보안 API 비밀 비노출2개씩 추가. 가짜 시간·응답·CLI와 실제 로컬 workerd/SQLite 범위. 운영 failover는 미검증 |
+| 로컬 회로·배포 검사 | Workers32·Node10·Python64, 합계106개와 타입·린트·번들 통과 | runtime pin의 [Infra main CI42300015630](https://github.com/JECT-Study/Ziper-5th-Infra/actions/runs/42300015630)은99개, 이후 경계 probe2개·보안 API2개·재기동과 전송3개 추가. 가짜 시간·응답·CLI와 실제 로컬 workerd/SQLite 범위. 운영 failover는 미검증 |
 
 ## 확정한 오류와 남은 가설
 
@@ -64,3 +64,9 @@ GitHub 조직의 Actions 추가 사용 예산0원 설정은 조회 권한이 없
 홈·백업이 같은 Supabase DB를 쓰므로 DB 전체 장애는 failover로 해결되지 않는다. 성공한 health만으로 모든 업무 API가 정상임을 보장하지 않는다. 사용자 쓰기를 다른 origin으로 자동 재전송하지 않으며 결과가 불명확한 쓰기는 중복 실행하지 않는다. 많은 사용자 실패가 표본을 증폭하는지, 실제 alarm 지연과 cold start가600초 목표에 미치는 영향은 운영 장애 실험에서 확인해야 한다.
 
 리뷰: gpt-6-astra가 진단 코드·정제된403 증거를 독립 검토하고 Node10개를 격리 실행했다. 자격 비교는 지정한 기준값과의 동일성만 증명하고, 본문 오류 코드는 원인 확정이 아니라 단서라는 제한을 확인했다. 다른 공급자 모델과 전체 transcript 경로는 제공되지 않았으므로 해당 범위의 교차 검토를 했다고 주장하지 않는다. 최종 기록은 [계획](evidence/2026-11-07/plan.md)·[결정 로그](evidence/2026-11-07/decisions.tsv)를 따른다.
+
+## 보안 API 후속 조회와 기존 재기동 정책의 적용 준비
+
+[실제 API 조회](evidence/2026-11-07/cloudflare-security-readback.json)는 기존 Worker token을 사용했습니다. zone·security_level·browser_check 조회는200, Bot 설정 조회는403, Security Events GraphQL은200 응답 안에서 authorization 거부였습니다. security_level=essentially_off·browser_check=on은 현재 설정이며 과거 challenge 원인을 확정하지 않습니다. 보안 이벤트를 읽을 관리 세션 또는 별도 읽기 자격이 필요합니다. 전용 토큰을 선택한다면 해당 계정 Account Analytics Read와 joonamin.dev Zone Read를 Infra production Secret CLOUDFLARE_SECURITY_API_TOKEN에 등록합니다. 기존 배포 token 권한은 확대하지 않습니다.
+
+새 이미지 배포와 독립적으로 기존 두 컨테이너의 정책만 정합하는 [ADR0011](adr/0011-reconcile-existing-restart-policy.md)과 [실제 읽기 계획](evidence/2026-11-07/existing-restart-plan.json)을 추가했습니다. 아직 이 계획의 적용은 CI 뒤 별도로 실행합니다. 기존 파일·시작 시각 보존과 반복 no-op을 확인한 뒤에만 적용 성공으로 기록합니다. trusted rollback은 과거 compose의 unless-stopped를 다시 적용할 수 있어 rollback 뒤 정책 readback도 필요합니다.

@@ -1,0 +1,36 @@
+{
+  "runUrl": "https://github.com/JECT-Study/Ziper-5th-Infra/actions/runs/42307058874",
+  "infraSha": "cbac15f099b4ff566f3639a1f6ec7dbe24eb8c81",
+  "report": {
+    "checkedAt": "2026-11-06T22:45:22.608045+00:00",
+    "host": "origin-ziper.joonamin.dev",
+    "credentialSource": "worker",
+    "readOnly": true,
+    "eventsReadable": false,
+    "events": [],
+    "scope": "At most20 sampled historical events for protected readyz; settings alone do not establish the cause",
+    "zoneLookupHttpStatus": 200,
+    "settings": {
+      "security_level": {
+        "httpStatus": 200,
+        "value": "essentially_off"
+      },
+      "browser_check": {
+        "httpStatus": 200,
+        "value": "on"
+      }
+    },
+    "botFightMode": {
+      "httpStatus": 403,
+      "enabled": null
+    },
+    "eventsHttpStatus": 200,
+    "window": {
+      "datetime_geq": "2026-11-06T20:45:24Z",
+      "datetime_leq": "2026-11-06T22:45:24Z"
+    },
+    "eventsResult": "graphql_rejected_or_unavailable",
+    "graphqlErrorKind": "authorization"
+  },
+  "scope": "Existing worker token can read selected settings, but security-event GraphQL authorization failed. BIC enabled is not cause attribution. No Cloudflare setting changed."
+}
