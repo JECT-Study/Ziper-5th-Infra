@@ -118,3 +118,7 @@ cloudflared 시작이나 current-version 기록 실패도 app/readiness 실패�
 GCP 부트스트랩은 `ZIPER_GCLOUD=<gcloud 경로> python3 scripts/bootstrap-gcp-production.py`로 명시 실행한다. 비밀 원본은 로컬 .config/ziper/deployment이고 값은 출력하지 않는다. source protection과 전용 WIF 조건을 먼저 설정하며 CI 장기 GCP 키는 만들지 않는다. 비용 cap은 Cloud Run 범위이며 지출 0원의 보장은 아니다.
 
 `deployment/home/recovery.py`는 root 전용 lease로 집어 app만 복구한다. 독립 systemd timer를 설치하고, 실행 중인 app에 seconds0 lease를 arm하여 다음 tick의 already_running과 lease 제거를 실제 대조한 후에만 stop한다. `scripts/observe-production-e2e.py`는 token을 private 파일에서 읽고 origin·release·분 표본·전이·단조 시계를 보존한다. 예정 backup은 circuit failover 성공으로 계산하지 않는다. 자세한 결정은 [ADR 0008](adr/0008-private-cloud-run-and-production-e2e.md), 실행 범위는 PR #1과 날짜별 증거를 따른다.
+
+WIF 실패 시 `scripts/inspect-oidc-claims.py`는 GitHub 발급 토큰을 메모리에서만 해석하고 repository ID·ref·environment·subject·workflow 참조만 출력합니다. JWT·Bearer credential·원본 응답은 저장하거나 artifact로 올리지 않습니다. 제공자 조건은 이 실제 claim과 대조한 뒤 수정하며 조건 거부를 우회하기 위해 main/production 경계를 제거하지 않습니다.
+
+`install-home-control.py`는 기본값이 계획만 생성합니다. 검토한 main 조상 SHA의 공개 코드·정책 일곱 파일만 작은 ASCII chunk로 전달하고 원격 해시가 일치할 때 공통 잠금 아래 설치합니다. 실제 설치는 `--install` 명시와 로컬 시간 가드가 필요하며 비밀·이미지는 보내지 않습니다. 설치 후 scheduler와 private/public readiness는 별도로 검증합니다.
