@@ -1,6 +1,6 @@
 # 운영
 
-이 저장소는 Worker·DO·홈 배포 수신기·재사용 배포 workflow의 소유 저장소다. Server는 수동 실행 진입점과 애플리케이션을 관리한다. 운영 Worker·DO·route와 Cloud Run은 아직 생성하지 않았다. 현재 실행 결과와 제한은 [검증 문서](verification.md)와 [nightly walkthrough](nightly-walkthrough-2026-11-06.md)를 따른다.
+이 저장소는 Worker·DO·홈 배포 수신기·재사용 배포 workflow의 소유 저장소다. Server는 수동 실행 진입점과 애플리케이션을 관리한다. 2026-11-06 홈 릴리스가 실행되었고 공개·보호 origin의 HTTP 200을 확인했다. Worker·DO·route와 Cloud Run의 완료 여부는 실행별 증거를 따른다. 현재 실행 결과와 제한은 [검증 문서](verification.md)와 [nightly walkthrough](nightly-walkthrough-2026-11-06.md)를 따른다.
 
 ## 배포 전제
 
@@ -76,3 +76,9 @@ Windows의 집어 전용 키 강제 명령은 `C:\Windows\System32\wsl.exe -d Ub
 CI·홈 간 동일성은 release manifest의 `imageConfigDigest`로 비교한다. `/opt/ziper/ci`에 receive.py와 image_identity.py를 함께 설치한다. archive의 config digest와 로드 후 재export한 config digest를 모두 대조한다. 호스트의 image-id는 로컬 Docker 엔진 Id이며 이식 가능한 digest와 다를 수 있다. [ADR 0005](adr/0005-portable-image-identity.md)에 근거와 비용을 기록한다. release-manifest artifact에는 SHA와 digest만 보존하며 비밀 설정을 포함하지 않는다.
 
 현재 확인한 Server production Secret은 DISCORD_DEPLOY_WEBHOOK_URL, ZIPER_CI_SSH_KEY, ZIPER_SSH_KNOWN_HOSTS_B64다. CF_ACCESS_CLIENT_ID와 CF_ACCESS_CLIENT_SECRET은 Server와 Infra Repository secrets에서 이름을 확인했다. Server는 `secrets: inherit`로 전달하므로 production 환경에 중복 등록할 필요가 없다. 사용자에게 값 전달을 요청하지 않고 Secret 이름만 조회한다.
+
+## Tunnel 시작과 origin 실패 진단
+
+홈 공개 검사는 Tunnel 기동 직후의 530을 고려해 최대 180초 동안 읽기 검사를 수행하며, Server의 기존 health 계약으로 `/livez`·`/readyz` 3회 연속 성공해야 통과한다. 실패는 연속 성공 수를 초기화한다. 결과는 `public-health` artifact에 보존한다. 배포나 쓰기 요청을 재시도하지 않는다.
+
+`Verify Cloudflare access manually`는 보호 origin의 읽기 검사도 수행한다. `home-origin-health`에는 설정·요청·응답 중 실패 단계, HTTP 상태 또는 제한한 네트워크 오류 코드만 저장한다. 비밀과 응답 본문은 기록하지 않는다. 이 기록 없이 origin 검사 실패를 자격·DNS·Tunnel 중 하나로 확정하지 않는다.

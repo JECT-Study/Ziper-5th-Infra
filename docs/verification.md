@@ -110,3 +110,9 @@ Server production에는 웹훅·전용 CI SSH 키·base64 인코딩한 호스트
 Infra 공개 전환 후 main 보호를 실제 적용·재조회했다: force push/삭제 금지, 관리자 우회 금지, 최신 check 성공, 승인 1개, CODEOWNERS 리뷰, 새 push 시 승인 초기화, 마지막 push 승인, 반영 사용자 joonamin 제한이다. CODEOWNERS는 PR #1에 있으나 아직 main에 없으므로 소유자 지정은 머지 후 활성화된다. 현재 PR 작성자가 joonamin이며 GitHub는 자기 PR 승인을 허용하지 않는다. 이 보호를 우회하거나 승인한 것으로 기록하지 않는다.
 
 홈 배포 재사용 workflow와 전송·수신 스크립트는 작성하고 actionlint/문법 검사를 수행했다. Windows 제한 수신기·키의 원격 설치, CI 정책 허용, Server main 진입점과 실제 수동 실행은 미완료다. 로컬·정적 통과를 실환경 배포 통과로 대체하지 않는다.
+
+## 2026-11-06 22시 수동 배포 진단
+
+Server 실행 [42222169766](https://github.com/JECT-Study/Ziper-5th-Server/actions/runs/42222169766)은 실제 SSH 스트림, OCI config digest 대조와 홈 readiness를 통과했다. 공개 검사는 Tunnel 기동 직후 HTTP 530으로 실패했다. 이후 별도 실제 검사에서 공개 API와 인증한 origin이 릴리스 `263558f6f2cf97ad717f71335c95c49214ae908c`로 200을 반환하고, 인증 없는 origin은 403이었다. Actions 전체 성공과 별도 사후 검증을 구분한다.
+
+Worker 실행 [42222983368](https://github.com/JECT-Study/Ziper-5th-Infra/actions/runs/42222983368)은 origin 사전 검사에서 실패하여 Worker 업로드를 실행하지 않았다. 기존 검사기가 모든 예외를 같은 문구로 가려 원인을 확정할 수 없었다. 단계·상태 코드를 기록하는 읽기 진단을 추가했으며 운영 원인은 다음 실행 증거로 판정한다.
