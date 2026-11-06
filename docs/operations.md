@@ -79,6 +79,14 @@ CI·홈 간 동일성은 release manifest의 `imageConfigDigest`로 비교한다
 
 ## Tunnel 시작과 origin 실패 진단
 
-홈 공개 검사는 Tunnel 기동 직후의 530을 고려해 최대 180초 동안 읽기 검사를 수행하며, Server의 기존 health 계약으로 `/livez`·`/readyz` 3회 연속 성공해야 통과한다. 실패는 연속 성공 수를 초기화한다. 결과는 `public-health` artifact에 보존한다. 배포나 쓰기 요청을 재시도하지 않는다.
+홈 공개 검사는 Server의 `scripts/verify-public-health.py`를 `--checks 3 --interval 10 --timeout 10 --startup-timeout 180 --retry-interval 5`로 실행한다. Infra의 기존 광범위한 예외 재시도 wrapper는 제거한다. 요청당 10초와 전체 180초를 제한하고 남은 시간에 맞춰 요청·대기를 줄인다. POSIX Linux runner에서 실행한다. 두 경로가 모두 통과한 검사 쌍이 10초 간격으로 3회 연속 성공해야 하며 일시적 실패는 횟수를 초기화한다. 기본 CLI는 opt-in 옵션이 없으면 기존처럼 첫 오류에 실패한다.
+
+HTTP 502·503·504·520~524·530, 연결 거부·재설정·중단·도달 불가·시간 초과와 일시적 DNS 오류만 5초 간격으로 재시도한다. 인증 오류, 리다이렉트, TLS 검증 실패, 영구 DNS 오류, 나머지 HTTP 상태와 잘못된 200 계약은 즉시 실패한다. Server는 `Accept: application/json`을 요청하고 기존 엄격한 JSON·캐시·본문 계약을 유지한다. 한도에 도달하면 실패한다. 배포나 쓰기 요청은 재실행하지 않는다.
+
+`public-health` artifact에 경로별 HTTP 상태·시도·경과 시간·요청 한도·정적 실패 이유·재시도 여부와 최종 연속 정상 횟수를 보존한다. 응답 본문과 자격은 기록하지 않는다. Cloudflare 상세 오류 코드는 추출하지 않으며 HTTP 530만으로 원인을 확정하지 않는다.
+
+Server main은 현재 재사용 workflow와 `infra_sha`를 모두 `bdc15a71bfd478187932eeb063822e307022c323`으로 고정한다. 이 변경을 Infra에 머지하는 것만으로 Server 배포에 반영되지 않는다. Infra PR CI → Infra main 머지 → 해당 실제 SHA의 main push CI 성공 → Server의 새 CLI 구현과 두 SHA 참조를 같은 변경으로 반영 → develop·main CI 성공 → main 수동 배포 순서로 진행한다. 참조 갱신은 그때 존재하는 커밋만 사용한다. 현재는 새 SHA를 기입하거나 운영 배포하지 않았다.
 
 `Verify Cloudflare access manually`는 보호 origin의 읽기 검사도 수행한다. `home-origin-health`에는 설정·요청·응답 중 실패 단계, HTTP 상태 또는 제한한 네트워크 오류 코드만 저장한다. 비밀과 응답 본문은 기록하지 않는다. 이 기록 없이 origin 검사 실패를 자격·DNS·Tunnel 중 하나로 확정하지 않는다.
+
+Linux workflow는 `timeout --signal=KILL 180s`로 검사 프로세스 전체에도 상한을 적용한다. Python 신호 처리가 지연되는 경우도 운영 단계가 계속 대기하지 않는다. 검사 JSON은 요청 전후 원자적으로 갱신하므로 강제 종료 시 마지막 경로·시도와 미수신 상태를 확인할 수 있다. 이 경우 `termination: running`은 성공을 뜻하지 않으며 Actions의 강제 종료 결과와 함께 실패로 판정한다.
