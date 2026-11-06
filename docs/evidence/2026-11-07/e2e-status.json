@@ -31,10 +31,10 @@
     "requires": "Authenticated Cloudflare administrative session to inspect Security Events"
   },
   "tests": {
-    "latestLocalTotal": 101,
+    "latestLocalTotal": 103,
     "workers": 32,
     "node": 10,
-    "python": 59,
+    "python": 61,
     "runtimePinCiTotal": 99,
     "nestedDockerRestartProofSeparate": true
   },

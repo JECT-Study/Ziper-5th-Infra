@@ -4,7 +4,7 @@
 
 [Nightly walkthrough](nightly-walkthrough-2026-11-07.md)의 표와 [원본 증거](evidence/2026-11-07/)가 최신 상태입니다. GHCR/AR 준비를 같은 release로 두 번 성공했지만 새 runtime 쌍 배포·Worker 배포·실제 장애 전환은 미완료입니다. 최신 읽기 전용 Actions 실행은 자격 일치 true와 HTTP403, `cf-mitigated: challenge`를 기록했습니다. 정확한 Cloudflare 규칙은 대시보드 로그 확인이 필요합니다. 아래 과거 실행은 그 당시의 범위이며 최신 운영 성공으로 승격하지 않습니다.
 
-로컬 최신 검사는 Workers32·Node10·Python59, 총101개와 타입·린트·번들입니다. runtime pin의 main CI42300015630은99개이며 이후 경계 probe의 비밀 비노출 검사2개를 추가했습니다. 격리 nested Docker restart-policy 검증은 별도 실제 실행이며 이101개에 포함하지 않습니다. 운영 컨테이너의 다음 전체 BIOS 부팅이나 실제 Cloud Run 600초 복구를 증명하지 않습니다.
+로컬 최신 검사는 Workers32·Node10·Python61, 총103개와 타입·린트·번들입니다. runtime pin의 main CI42300015630은99개이며 이후 경계 probe와 보안 API 진단의 비밀 비노출 검사2개씩을 추가했습니다. 격리 nested Docker restart-policy 검증은 별도 실제 실행이며 이103개에 포함하지 않습니다. 운영 컨테이너의 다음 전체 BIOS 부팅이나 실제 Cloud Run 600초 복구를 증명하지 않습니다.
 
 ## 2026-11-06 운영 E2E 재개
 
