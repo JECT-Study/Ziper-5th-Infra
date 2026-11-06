@@ -1,10 +1,12 @@
 import importlib.util
 import io
+import sys
 from pathlib import Path
 import tarfile
 import unittest
 
 path = Path(__file__).resolve().parents[1] / 'deployment/home/receive.py'
+sys.path.insert(0, str(path.parent))
 spec = importlib.util.spec_from_file_location('receiver', path)
 receiver = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(receiver)

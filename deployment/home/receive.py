@@ -9,6 +9,7 @@ import subprocess
 import sys
 import tarfile
 import tempfile
+from image_identity import image_config_digest, loaded_image_config_digest
 
 def validate_members(members):
     expected = {'image.tar.gz', 'manifest.json', 'compose.yml', 'deploy.sh'}
@@ -45,11 +46,15 @@ def deploy(version, archive):
         manifest = json.loads((stage / 'manifest.json').read_text())
         if manifest.get('sourceSha') != version:
             raise SystemExit('Release source mismatch')
-        if not re.fullmatch('sha256:[0-9a-f]{64}', manifest.get('imageId', '')):
+        if not re.fullmatch('sha256:[0-9a-f]{64}', manifest.get('imageConfigDigest', '')):
             raise SystemExit('Invalid image identity')
         digest = hashlib.file_digest((stage / 'image.tar.gz').open('rb'), 'sha256').hexdigest()
         if digest != manifest.get('archiveSha256'):
             raise SystemExit('Release archive mismatch')
+        image = 'ziper-server:' + version
+        with (stage / 'image.tar.gz').open('rb') as content:
+            if image_config_digest(content, image) != manifest['imageConfigDigest']:
+                raise SystemExit('Exported image config differs from manifest')
         # Deployment scripts are installed by the administrator, not executed from the SSH payload.
         trusted = root / 'ci'
         for filename in ('compose.yml', 'deploy.sh'):
@@ -60,9 +65,12 @@ def deploy(version, archive):
             raise SystemExit('Immutable release manifest mismatch')
         env = dict(os.environ, DOCKER_CONFIG=str(root / 'docker-client'))
         subprocess.run(['docker', 'load', '-i', str(stage / 'image.tar.gz')], env=env, check=True, stdout=subprocess.DEVNULL)
-        actual = subprocess.check_output(['docker', 'image', 'inspect', '--format', '{{.Id}}', 'ziper-server:' + version], env=env, text=True).strip()
-        if actual != manifest['imageId']:
-            raise SystemExit('Loaded image differs from manifest')
+        actual = subprocess.check_output(['docker', 'image', 'inspect', '--format', '{{.Id}}', image], env=env, text=True).strip()
+        if not re.fullmatch(r'sha256:[a-f0-9]{64}', actual):
+            raise SystemExit('Invalid local engine identity')
+        if loaded_image_config_digest(image, env, root) != manifest['imageConfigDigest']:
+            raise SystemExit('Loaded image config differs from manifest')
+        print('ZIPER_IMAGE_CONFIG_DIGEST=' + manifest['imageConfigDigest'], flush=True)
         container = subprocess.check_output(['docker', 'create', 'ziper-server:' + version], env=env, text=True).strip()
         try:
             extracted = stage / 'app.jar'
