@@ -1,5 +1,15 @@
 # 운영
 
+## GHCR 홈 이미지 전달
+
+새 deploy-home workflow는 publish → deploy → notify로 나눈다. publish는 packages:write로 tested-release 이미지를 GHCR의 source SHA tag에 발행하고 registry-release artifact를 만든다. 기존 tag는 digest를 조회해 JAR·소스 번들 검증 후 재사용하며 덮어쓰지 않는다. 404 이외의 registry 조회 오류는 중단한다. repo 이름은 ghcr.io/ject-study/ziper-server로 고정한다.
+
+deploy job은 packages:read의 별도 job 토큰과 작은 metadata JSON만 SSH로 전달한다. 수신기의 deploy-registry는 정확한 digest를 pull하고 OCI config·JAR를 검증한 뒤 기존 신뢰 compose/deploy를 실행한다. Docker 인증은 임시 config에만 남고 종료 시 제거한다. runtime은 검증한 로컬 이미지만 사용한다. 새 수신기는 기존 image archive 전송 명령을 거부한다. caller를 먼저 새 GHCR workflow로 전환한 뒤 수신기를 설치하며, 이전 컨테이너·로컬 이미지와 release manifest는 보존한다.
+
+홈 `/opt/ziper/ci`에는 receive.py·image_identity.py·registry_release.py·deploy.sh와 config/production.json의 production.json을 함께 설치한다. Source caller에는 packages:write 권한이 필요하며 두 Infra pin을 성공한 실제 main SHA로 함께 갱신한다. `publish.outputs.image`와 `digest`, `registry-release` artifact는 Cloud Run 경로가 소비할 수 있다. 백업을 연결할 때 publish와 home deploy 사이에 검증 gate를 두며 홈만 성공한 결과를 쌍 배포로 기록하지 않는다. 정책은 [ADR 0007](adr/0007-ghcr-home-delivery.md)을 따른다.
+
+새 artifact의 receiver-control-proof에는 check·일반 명령 거부·registry deploy 판정과 payload 크기·정적 실패 코드만 저장한다. 토큰·전체 stderr·응답 본문은 저장하지 않는다. 실제 발행·pull·readiness 결과는 실행별 증거를 따른다.
+
 이 저장소는 Worker·DO·홈 배포 수신기·재사용 배포 workflow의 소유 저장소다. Server는 수동 실행 진입점과 애플리케이션을 관리한다. 2026-11-06 홈 릴리스가 실행되었고 공개·보호 origin의 HTTP 200을 확인했다. Worker·DO·route와 Cloud Run의 완료 여부는 실행별 증거를 따른다. 현재 실행 결과와 제한은 [검증 문서](verification.md)와 [nightly walkthrough](nightly-walkthrough-2026-11-06.md)를 따른다.
 
 ## 배포 전제
@@ -69,11 +79,11 @@ Server 저장소 production 환경은 main만 허용하도록 생성·조회 확
 
 Infra main의 force push·삭제는 bypass 대상이 없는 별도 ruleset `26637239`로도 차단한다. PR 리뷰 bypass와 이력 보호를 분리하며 원본은 `config/github-main-history.json`에 둔다. 관리자가 ruleset 설정 자체를 바꾸는 권한까지 제한한 것은 아니다.
 
-최초 검증은 홈 단독 배포를 우선한다. `deploy-home.yml`은 Server main에서만 재사용하도록 제한하며 source와 Infra SHA의 성공한 main CI를 요구한다. 검사한 JAR와 Sentry source bundle을 재사용해 이미지를 만들고 고정된 cloudflared checksum·SSH host key·전용 키·서비스 토큰으로 전송한다. 수신기는 고정 명령과 네 파일만 허용하며 관리자 설치 compose/deploy와 payload 계약을 비교한다.
+`deploy-home.yml`은 Server main에서만 재사용하도록 제한하며 source와 Infra SHA의 성공한 main CI를 요구한다. 검사한 JAR와 Sentry source bundle로 만든 이미지는 GHCR에 발행하고 metadata만 SSH로 전달한다. 수신기는 고정 repository의 digest와 JAR를 검증하며 관리자 설치 compose/deploy만 실행한다. runtime 배포와 Cloud Run 동일 이미지 검증은 실행별 증거를 따른다.
 
-Windows의 집어 전용 키 강제 명령은 `C:\Windows\System32\wsl.exe -d Ubuntu --exec python3 /opt/ziper/ci/receive.py $env:SSH_ORIGINAL_COMMAND`다. 기존 Windows 기본 PowerShell이 원래 명령을 데이터 인수로 전달하며 수신기는 check 또는 deploy와 40자리 SHA만 허용한다. 이중 PowerShell의 바이너리 stdin 경유는 제거했다. Python이 WSL의 전용 incoming 디렉터리에서 배타 생성·2GB 제한·정리까지 담당한다. 다른 키나 공유 sshd의 기본 셸은 변경하지 않는다. 대용량 전달은 실제 1MiB 바이너리의 길이와 해시를 대조하고 이후 실제 release로 검증한다. 개인 Access 세션의 검사와 CI 서비스 토큰의 운영 배포 결과는 구분한다.
+Windows의 집어 전용 키 강제 명령은 `C:\Windows\System32\wsl.exe -d Ubuntu --exec python3 /opt/ziper/ci/receive.py $env:SSH_ORIGINAL_COMMAND`다. 기존 Windows 기본 PowerShell이 원래 명령을 데이터 인수로 전달하며 새 수신기는 check 또는 deploy-registry와 40자리 SHA만 허용한다. 다른 키나 공유 sshd의 기본 셸은 변경하지 않는다. 기존 deploy archive 명령은 거부한다. Source caller를 먼저 새 pin으로 반영하고 신뢰 수신기·정책을 함께 설치한 다음 실제 실행한다.
 
-CI·홈 간 동일성은 release manifest의 `imageConfigDigest`로 비교한다. `/opt/ziper/ci`에 receive.py와 image_identity.py를 함께 설치한다. archive의 config digest와 로드 후 재export한 config digest를 모두 대조한다. 호스트의 image-id는 로컬 Docker 엔진 Id이며 이식 가능한 digest와 다를 수 있다. [ADR 0005](adr/0005-portable-image-identity.md)에 근거와 비용을 기록한다. release-manifest artifact에는 SHA와 digest만 보존하며 비밀 설정을 포함하지 않는다.
+CI·홈 간 동일성은 release manifest의 imageConfigDigest와 내부 JAR SHA256으로 비교한다. GHCR imageManifestDigest로 pull 대상을 고정하며 OCI config digest와 같은 종류의 값으로 비교하지 않는다. 검증용 임시 tag와 runtime release tag를 구분한다. 설치 파일 목록은 위 GHCR 절을 따른다. [ADR 0005](adr/0005-portable-image-identity.md)의 이미지 식별 결정과 [ADR 0007](adr/0007-ghcr-home-delivery.md)의 전달 프로토콜을 함께 검토한다. release-manifest artifact에는 비밀 설정을 포함하지 않는다.
 
 현재 확인한 Server production Secret은 DISCORD_DEPLOY_WEBHOOK_URL, ZIPER_CI_SSH_KEY, ZIPER_SSH_KNOWN_HOSTS_B64다. CF_ACCESS_CLIENT_ID와 CF_ACCESS_CLIENT_SECRET은 Server와 Infra Repository secrets에서 이름을 확인했다. Server는 `secrets: inherit`로 전달하므로 production 환경에 중복 등록할 필요가 없다. 사용자에게 값 전달을 요청하지 않고 Secret 이름만 조회한다.
 
@@ -90,3 +100,21 @@ Server main은 현재 재사용 workflow와 `infra_sha`를 모두 `bdc15a71bfd47
 `Verify Cloudflare access manually`는 보호 origin의 읽기 검사도 수행한다. `home-origin-health`에는 설정·요청·응답 중 실패 단계, HTTP 상태 또는 제한한 네트워크 오류 코드만 저장한다. 비밀과 응답 본문은 기록하지 않는다. 이 기록 없이 origin 검사 실패를 자격·DNS·Tunnel 중 하나로 확정하지 않는다.
 
 Linux workflow는 `timeout --signal=KILL 180s`로 검사 프로세스 전체에도 상한을 적용한다. Python 신호 처리가 지연되는 경우도 운영 단계가 계속 대기하지 않는다. 검사 JSON은 요청 전후 원자적으로 갱신하므로 강제 종료 시 마지막 경로·시도와 미수신 상태를 확인할 수 있다. 이 경우 `termination: running`은 성공을 뜻하지 않으며 Actions의 강제 종료 결과와 함께 실패로 판정한다.
+
+## Registry 전환의 잠금·복구·시간 경계
+
+고유 verification tag에서 config·JAR를 검사하며, 실패한 metadata는 기존 release tag를 바꾸지 않는다. 수신기부터 deploy.sh까지 공통 deploy.lock을 유지한다. inherited fd의 inode를 확인하며 별도로 같은 lock을 다시 열어 교착시키지 않는다. 복구 작업도 같은 lock을 사용해야 한다.
+
+cloudflared 시작 실패도 app/readiness 실패와 같은 롤백으로 처리한다. 이전 runtime과 current-version을 보존하고 최초 실패는 app을 중지한다. 같은 release를 다시 실행하다 Tunnel 단계가 실패했다고 기존 app을 무조건 중지하지 않는다.
+
+보류 시간에도 GHCR 발행·재검증은 가능하지만 runtime 변경은 하지 않는다. publish 시작 당시와 home mutation 직전 workflow 시간을 구분하며 수신기도 production.json으로 재검사한다. pull 중 02:30 경계를 넘으면 release tag·컨테이너를 변경하지 않고 보류한다. 공개 readiness 단계는 보류 시 건너뛰고 Discord에도 보류를 전달한다. publish 자체가 실패했다면 보류 시간에도 실패 알림으로 기록한다.
+
+허용 시간에 이미 시작한 배포가 실패하면 이전 상태 복구는 보류 구간에도 시도한다. 복구를 이용해 새 release를 추가 배포하지 않으며, 이 경우 결과는 성공이나 단순 보류가 아닌 실패·복구 판정으로 기록한다.
+
+## 비공개 백업과 운영 검증 준비
+
+쌍 배포는 GHCR 발행 → AR 미러 준비 → protected home 확인 → Cloud Run runtime·private probes → 홈 runtime·public probes 순서다. 준비 발행은 보류 중에도 가능하며 런타임은 각 변경 직전의 시간 가드로 차단한다. 준비 오류를 deferred로 숨기지 않는다. 배포 성공 알림은 양쪽 readiness가 통과한 때만 paired다.
+
+GCP 부트스트랩은 `ZIPER_GCLOUD=<gcloud 경로> python3 scripts/bootstrap-gcp-production.py`로 명시 실행한다. 비밀 원본은 로컬 .config/ziper/deployment이고 값은 출력하지 않는다. source protection과 전용 WIF 조건을 먼저 설정하며 CI 장기 GCP 키는 만들지 않는다. 비용 cap은 Cloud Run 범위이며 지출 0원의 보장은 아니다.
+
+`deployment/home/recovery.py`는 root 전용 lease로 집어 app만 복구한다. 독립 systemd timer를 설치하고, 실행 중인 app에 seconds0 lease를 arm하여 다음 tick의 already_running과 lease 제거를 실제 대조한 후에만 stop한다. `scripts/observe-production-e2e.py`는 token을 private 파일에서 읽고 origin·release·분 표본·전이·단조 시계를 보존한다. 예정 backup은 circuit failover 성공으로 계산하지 않는다. 자세한 결정은 [ADR 0008](adr/0008-private-cloud-run-and-production-e2e.md), 실행 범위는 PR #1과 날짜별 증거를 따른다.

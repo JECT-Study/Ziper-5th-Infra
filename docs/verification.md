@@ -122,3 +122,11 @@ Worker 실행 [42222983368](https://github.com/JECT-Study/Ziper-5th-Infra/action
 확정된 문제는 Accept 미지정과 application/json 전용 검사 간의 불일치, 그리고 기존 배포 흐름의 공개 준비 대기 부재다. `/livez`·`/readyz` 경로는 유지한다. 운영 중 관찰한 200과 해당 SHA의 일치는 사후 증거이며 실행 42222169766의 실패를 성공으로 바꾸지 않는다. Infra main cf8e077의 wrapper는 ValueError까지 재시도하므로 인증·계약 위반을 즉시 종료하는 요청 조건을 만족하지 못해 제거했다. 오류 분류와 가상 시간 검사는 Server 기존 health 검사·테스트로 모았다.
 
 변경 후 로컬 검사와 CI 결과는 PR에 기록한다. 새 정책의 실제 운영 530 복구, 새로운 Server/Infra 조합의 main 배포 및 성공 Discord 알림은 이번 작업에서 실행하지 않았다. Cloud Run 전환·600초 목표·전체 FSM 검증과도 별개의 범위다.
+
+## 2026-11-07 새벽 운영 준비
+
+Server 실행 [42250905425](https://github.com/JECT-Study/Ziper-5th-Server/actions/runs/42250905425)의 제한 SSH·일반 명령 거부·1MiB 검사는 모두 통과했지만 실제 archive 전달은 Broken pipe/255로 끝났다. 이 로그는 큰 전달 중 연결 종료를 뜻하며 서버의 물리적 종료 원인을 확정하지 않는다. GHCR exact digest pull로 경로를 바꾸고 작은 제어 JSON만 SSH로 보낸다. legacy archive 엔드포인트는 제거한다.
+
+통합 로컬 검사는 Worker26·backup6·Node1·이미지5·registry14·운영관측10·Cloud Run16, 총78개와 타입·린트·번들을 통과했다. 가짜 CLI와 HTTP fixture를 사용한 경계 검증이며 운영 발행·배포·600초 증거가 아니다. 별도 검토가 재현한 터널 실패 롤백 누락과 늦은 시간 가드를 수정하고 실제 deploy.sh fixture로 다시 확인했다.
+
+실제 설정에서 WIF ACTIVE와 main·production·저장소 숫자 ID 조건, AR 전용 저장소, 두 runtime Secret과 전용 계정을 조회했다. Cloud Run 앱 런타임과 Worker는 아직 반영하지 않았다. 03:00 이후 공개 두 probe의 530을 관측했으며 06시 이후의 새 코드 운영 E2E와 구분한다. 계획과 결정 이력은 [실행 계획](evidence/2026-11-07/plan.md), [결정 로그](evidence/2026-11-07/decisions.tsv)에 있다.

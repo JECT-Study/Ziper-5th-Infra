@@ -1,0 +1,5 @@
+ts	phase	decision	why	evidence	result
+2026-11-06T16:45:50Z	frame	실제 홈·Cloud Run·Worker·Discord까지 판정하고 테스트 범위를 분리한다	사용자가 새벽 운영 E2E와 최종 범위 보고를 요청했다	docs/evidence/2026-11-07/plan.md	open
+2026-11-06T18:08:30Z	baseline	03시 홈 종료 뒤 공개 probe가530임을 관측했다	배포 보류를 지키고 실제 기준선과 새 구성의 E2E를 구분한다	Server run42250905425 and2026-11-06T18:00:49Z probes	NOT_VERIFIED
+2026-11-06T18:08:30Z	gcp	WIF·전용SA·두Secret와invoker키를 준비했다	장기CI키 없이 보호된main production만 배포하도록 한다	scripts/bootstrap-gcp-production.py,/tmp/ziper-gcp-bootstrap.log	provider preparation verified; runtime not deployed
+2026-11-06T18:35:33Z	implementation	GHCR·AR·privateCloudRun·guard·recovery 도구와 테스트를 통합했다	이미지 SSH를 제거하고 실제 장애 실험 전 고장 경로를 검증한다	/tmp/ziper-paired-check.log,docs/adr/0008-private-cloud-run-and-production-e2e.md	78 local tests passed; operational not verified
