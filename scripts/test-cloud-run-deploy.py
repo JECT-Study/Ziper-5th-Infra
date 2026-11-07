@@ -130,6 +130,18 @@ else:
 
 
 class CloudRunDeployTests(unittest.TestCase):
+    def test_private_verifier_cli_starts_and_rejects_missing_token_without_disclosure(self):
+        script = str(Path(__file__).with_name('verify-cloud-run.py'))
+        help_result = subprocess.run([sys.executable, script, '--help'], capture_output=True, text=True)
+        self.assertEqual(help_result.returncode, 0, help_result.stderr)
+        self.assertIn('--source', help_result.stdout)
+        env = {key: value for key, value in os.environ.items() if key != 'CLOUD_RUN_ID_TOKEN'}
+        result = subprocess.run([sys.executable, script, '--url', 'https://ziper-backup-fixture.run.app',
+                                 '--source', SOURCE], env=env, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 2, result.stderr)
+        self.assertNotIn('Traceback', result.stderr)
+        self.assertIn('private ID token environment', result.stderr)
+
     def test_actual_cli_mirror_pins_both_digests_and_cleans_credentials(self):
         with fake_cli() as root:
             result = deploy.prepare(manifest(), root / 'release.json')

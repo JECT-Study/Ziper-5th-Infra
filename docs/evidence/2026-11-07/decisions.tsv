@@ -27,3 +27,5 @@ ts	phase	decision	why	evidence	result
 2026-11-06T23:23:02Z	health	정책 적용 후 기존 홈의 strict 공개 health3쌍을 실제 확인했다	현재 서비스 정상과 새 쌍 이미지 배포·failover를 구분한다	docs/evidence/2026-11-07/home-public-health-after-policy.json	3연속정상; 새registry앱·CloudRun·Worker·실제fault·성공Discord 미검증; CF보안조회접근 필요
 2026-11-07T06:36:11Z	start	새 이미지 쌍 배포와 시도별 Discord 증거 작업을 재개했다	승인된 계획을 구현하고 로컬과 운영 증거를 구분한다	approved plan; /root; prior rows through morning 2026-11-07	보호 origin challenge 해소가 필요
 2026-11-07T06:36:11Z	implementation	예상 release·origin과 Discord GET 영수증 및 시도별 artifact를 추가했다	이전 앱의 UP와 이전 시도의 artifact를 새 배포 성공으로 오인하지 않는다	ADR0012; scripts/notify-discord.test.ts; Source scripts/test-public-health.py	health18통과1skip; Discord11통과; 전체 검사 진행 중; 운영 미실행
+2026-11-07T06:40:25Z	review	실제 CLI 진입 오류와 Discord GET 본문 연결 오류의 재시도 누락을 수정했다	함수 fixture만으로 운영 호출 성공을 판단하지 않는다	scripts/test-cloud-run-deploy.py; scripts/notify-discord.test.ts; gpt-6-astra review	운영 실행 전 CLI NameError 재현; 회귀 추가 후 검사 진행
+2026-11-07T06:42:07Z	audit	시작 행의 계획·이전 기록 범위를 구체적인 증거로 보완했다	기존 시작 행의 대략적인 포인터를 이 행으로 정정한다	docs/evidence/2026-11-07/paired-deployment-plan.md; previous ts 2026-11-06T16:45:50Z..2026-11-06T23:23:02Z	범위 정정; 운영 성공 미주장

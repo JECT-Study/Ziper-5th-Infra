@@ -4,7 +4,7 @@
 
 [Nightly walkthrough](nightly-walkthrough-2026-11-07.md)의 표와 [원본 증거](evidence/2026-11-07/)가 최신 상태입니다. GHCR/AR 준비를 같은 release로 두 번 성공했지만 새 runtime 쌍 배포·Worker 배포·실제 장애 전환은 미완료입니다. 최신 읽기 전용 Actions 실행은 자격 일치 true와 HTTP403, `cf-mitigated: challenge`를 기록했습니다. 정확한 Cloudflare 규칙은 보안 API 또는 대시보드 이벤트 확인이 필요합니다. 아래 과거 실행은 그 당시의 범위이며 최신 운영 성공으로 승격하지 않습니다.
 
-로컬 최신 검사는 Workers32·Node10·Python64, 총106개와 타입·린트·번들입니다. runtime pin의 main CI42300015630은99개이며 이후 경계 probe2개·보안 API2개·재기동 정책과 전송 가드3개를 추가했습니다. 격리 nested Docker restart-policy 검증은 별도 실제 실행이며 이106개에 포함하지 않습니다. 운영 컨테이너의 다음 전체 BIOS 부팅이나 실제 Cloud Run 600초 복구를 증명하지 않습니다.
+2026-11-07 아침 로컬 검사는 Workers32·Node10·Python64, 총106개와 타입·린트·번들이었습니다. runtime pin의 main CI42300015630은99개이며 이후 경계 probe2개·보안 API2개·재기동 정책과 전송 가드3개를 추가했습니다. 격리 nested Docker restart-policy 검증은 별도 실제 실행이며 이106개에 포함하지 않습니다. 운영 컨테이너의 다음 전체 BIOS 부팅이나 실제 Cloud Run 600초 복구를 증명하지 않습니다.
 
 ## 2026-11-06 운영 E2E 재개
 
@@ -144,3 +144,7 @@ Server 실행 [42250905425](https://github.com/JECT-Study/Ziper-5th-Server/actio
 ## 새 이미지 쌍 배포와 반복 검증의 판정
 
 [ADR 0012](adr/0012-paired-deployment-receipts.md)의 구현은 release·origin 일치와 시도별 artifact·Discord POST/GET 영수증을 추가한다. 코드·로컬·CI·운영 결과를 구분하고 실제 실행 전에는 이 절을 통과 증거로 읽지 않는다. 최초 전체 성공 뒤 같은 run의 전체 재실행도 성공해야 반복 검증을 통과한다. 각 시도의 source/Infra SHA, GHCR/AR 식별자, runtime probes, 보류 여부와 서로 다른 Discord message ID를 PR #1에서 대조한다. Worker 전환·장애 주입·600초 복구는 별도 미검증 범위다.
+
+독립 검토에서 비공개 Cloud Run 검사 CLI의 sys import 누락을 재현했다. 함수 fixture가 실제 CLI 진입을 실행하지 않아 놓친 문제로, help와 자격 누락의 실제 subprocess 실행을 회귀 검사에 추가했다. Discord GET의 본문 전송 중 연결 오류도 읽기 재시도에 포함하며 잘못된 JSON은 즉시 거부한다. 실제 운영 검증을 대체하지 않는다.
+
+후속 쌍 배포 증거 보완의 로컬 전체 검사는 Workers32·Node23·Python65, 총120개와 타입·린트·번들을 통과했다. actionlint도 통과했다. 이 결과에는 실제 Cloud Run 생성·홈 이미지 교체·성공 Discord가 포함되지 않는다. 새 읽기 전용 실행42347844427은 자격 일치와403 challenge, 전용 토큰 실행42347875298은 zone 조회200 및 GraphQL authorization 거부를 기록했다.

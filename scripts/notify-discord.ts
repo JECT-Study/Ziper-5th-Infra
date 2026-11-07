@@ -85,7 +85,18 @@ try {
       }
       throw new Error("Notification read rejected");
     }
-    const stored = messageSchema.parse(await readResponse.json());
+    let storedValue: unknown;
+    try {
+      storedValue = await readResponse.json();
+    } catch (error: unknown) {
+      if (attempt < 3 && (error instanceof TypeError || error instanceof DOMException
+        && (error.name === "AbortError" || error.name === "TimeoutError"))) {
+        await pause();
+        continue;
+      }
+      throw new Error("Notification body read failed");
+    }
+    const stored = messageSchema.parse(storedValue);
     if (stored.id !== message.id || stored.content !== content) throw new Error("Stored notification differs");
     delivery = { state: "confirmed", messageId: stored.id, channelId: stored.channel_id, readAttempts: attempt };
     phase = "complete";

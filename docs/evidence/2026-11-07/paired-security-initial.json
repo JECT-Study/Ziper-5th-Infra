@@ -1,0 +1,31 @@
+{
+  "checkedAt": "2026-11-07T06:38:05.702232+00:00",
+  "host": "origin-ziper.joonamin.dev",
+  "credentialSource": "dedicated",
+  "readOnly": true,
+  "eventsReadable": false,
+  "events": [],
+  "scope": "At most20 sampled historical events for protected readyz; settings alone do not establish the cause",
+  "zoneLookupHttpStatus": 200,
+  "settings": {
+    "security_level": {
+      "httpStatus": 403,
+      "value": null
+    },
+    "browser_check": {
+      "httpStatus": 403,
+      "value": null
+    }
+  },
+  "botFightMode": {
+    "httpStatus": 403,
+    "enabled": null
+  },
+  "eventsHttpStatus": 200,
+  "window": {
+    "datetime_geq": "2026-11-07T04:38:06Z",
+    "datetime_leq": "2026-11-07T06:38:06Z"
+  },
+  "eventsResult": "graphql_rejected_or_unavailable",
+  "graphqlErrorKind": "authorization"
+}
