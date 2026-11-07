@@ -424,6 +424,7 @@ def deploy(release, output_path):
                '--revision-suffix=s' + release['sourceSha'],
                '--startup-probe=httpGet.path=/readyz,httpGet.port=8080,timeoutSeconds=3,periodSeconds=5,failureThreshold=30',
                '--set-env-vars=' + env,
+               '--clear-volume-mounts', '--clear-volumes',
                '--set-secrets=/run/ziper-config/application.properties=ziper-runtime-properties:1,/run/ziper/db-ca.pem=ziper-db-ca:1',
                '--labels=service=ziper,source-sha=' + release['sourceSha'])
         resource = resource_value(gcloud('run', 'services', 'describe', SERVICE, '--region', REGION))

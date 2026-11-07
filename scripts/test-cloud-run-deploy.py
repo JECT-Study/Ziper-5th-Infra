@@ -262,6 +262,21 @@ class CloudRunDeployTests(unittest.TestCase):
             self.assertTrue(any('ziper-runtime-properties:1' in arg for arg in args))
             self.assertTrue(any('SPRING_FLYWAY_ENABLED=false' in arg for arg in args))
 
+    def test_new_revision_replaces_inherited_volumes_in_one_mutation(self):
+        existing = provider()
+        template = existing['spec']['template']['spec']
+        template['volumes'] += [dict(volume, name=volume['name'] + '-orphan')
+                                for volume in template['volumes'][:]]
+        with tempfile.TemporaryDirectory() as directory, patch.object(deploy, 'deployment_allowed', return_value=True), \
+                patch.object(deploy, 'gcloud', side_effect=[None, json.dumps(existing), '{}',
+                                                          json.dumps(provider()), json.dumps(revision())]) as api:
+            deploy.deploy(mirror(), Path(directory) / 'release.json')
+            mutations = [call.args for call in api.call_args_list
+                         if call.args[:2] == ('run', 'deploy') or 'update' in call.args]
+            self.assertEqual(len(mutations), 1)
+            self.assertIn('--clear-volumes', mutations[0])
+            self.assertIn('--clear-volume-mounts', mutations[0])
+
     def test_ready_revision_must_match_pinned_artifact_digest(self):
         with tempfile.TemporaryDirectory() as directory, patch.object(deploy, 'deployment_allowed', return_value=True), \
                 patch.object(deploy, 'gcloud', side_effect=[json.dumps(revision(GHCR_DIGEST))]):
