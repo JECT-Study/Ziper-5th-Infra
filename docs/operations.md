@@ -154,3 +154,5 @@ WIF 실패 시 `scripts/inspect-oidc-claims.py`는 GitHub 발급 토큰을 메�
 Discord는 wait=true POST 한 번, 같은 메시지 GET으로 채널·내용·ID를 대조한다. GET만 네트워크 오류·429·5xx에 최대 3회, 요청당 10초, 간격 2초로 제한한다. 인증·내용 불일치에는 재시도하지 않는다. `discord-deploy-receipt-attempt-N`에 비밀 없는 영수증을 남기며 unknown·posted는 confirmed가 아니다. 알림 실패만으로 서버를 다시 배포하지 않는다. 메시지 저장 확인은 개인 기기의 푸시 수신 증거가 아니다.
 
 무료 Bot Fight Mode가 보호 origin의 자동 검사를 관리 챌린지로 처리한 기록을 확인했다. 사용자가 zone 전체 영향과 tocktock 영향을 확인하고 해당 기능을 직접 OFF로 변경했다. 예외 결정·되돌리기·읽기 토큰 권한과 검증 한계는 [ADR0013](adr/0013-free-bot-fight-mode-and-machine-probes.md)을 따른다. Access 공개 bypass를 추가하지 않는다. 후속 Actions200과 익명403을 각각 확인한 후에만 쌍 배포를 시작한다.
+
+Cloud SDK592의 run services/revisions describe는 없는 객체에 NOT_FOUND 대신 `ERROR: (gcloud.run.<kind>.describe) Cannot find <kind> [<요청 이름>]`을 반환할 수 있다. missing 조회에서 요청 명령·이름까지 정확히 일치한 형식만 부재로 허용한다. 권한·인증 오류를 먼저 분류하며 추가 문구·다른 리소스·불명확한 결과는 계속 실패한다. 이는 읽기 경계의 최초 생성 판단이며 배포 쓰기 재시도를 허용하지 않는다.

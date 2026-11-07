@@ -130,6 +130,31 @@ else:
 
 
 class CloudRunDeployTests(unittest.TestCase):
+    def test_sdk592_missing_revision_and_service_are_recognized_only_for_the_exact_read(self):
+        for plural, singular, name in [('revisions', 'revision', REVISION), ('services', 'service', 'ziper-backup')]:
+            args = ['gcloud', 'run', plural, 'describe', name, '--region', deploy.REGION]
+            message = f'ERROR: (gcloud.run.{plural}.describe) Cannot find {singular} [{name}]\n'
+            def run(command, **kwargs):
+                return subprocess.CompletedProcess(command, 1, b'', message.encode())
+            with self.subTest(kind=plural):
+                self.assertIsNone(deploy.cli(args, missing=True, run=run))
+                with self.assertRaises(deploy.Refused):
+                    deploy.cli(args, run=run)
+                with self.assertRaises(deploy.Refused):
+                    deploy.cli([*args[:4], 'different-resource', *args[5:]], missing=True, run=run)
+
+    def test_missing_does_not_swallow_permission_or_ambiguous_provider_errors(self):
+        args = ['gcloud', 'run', 'revisions', 'describe', REVISION]
+        for message in ['PERMISSION_DENIED NOT_FOUND fixture-private-marker',
+                        'UNAUTHENTICATED NOT_FOUND fixture-private-marker',
+                        f'ERROR: (gcloud.run.revisions.describe) Cannot find revision [{REVISION}]\nextra-private-marker',
+                        'NOT_FOUND_IN_CACHE fixture-private-marker', 'fixture-private-marker']:
+            def run(command, **kwargs):
+                return subprocess.CompletedProcess(command, 1, b'', message.encode())
+            with self.subTest(message=message), self.assertRaises(deploy.Refused) as error:
+                deploy.cli(args, missing=True, run=run)
+            self.assertNotIn('private-marker', str(error.exception))
+
     def test_private_verifier_cli_starts_and_rejects_missing_token_without_disclosure(self):
         script = str(Path(__file__).with_name('verify-cloud-run.py'))
         help_result = subprocess.run([sys.executable, script, '--help'], capture_output=True, text=True)
