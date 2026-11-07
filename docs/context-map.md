@@ -31,3 +31,5 @@
 - [0010 Infra 소유자 개인의 PR 리뷰 예외](adr/0010-owner-only-review-bypass.md)
 
 - [0011 기존 집어 컨테이너 재기동 정책의 정합](adr/0011-reconcile-existing-restart-policy.md)
+
+- [0012 쌍 배포의 릴리스 식별과 시도별 알림 증거](adr/0012-paired-deployment-receipts.md)

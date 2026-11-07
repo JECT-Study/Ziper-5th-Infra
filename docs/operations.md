@@ -109,7 +109,7 @@ HTTP 502·503·504·520~524·530, 연결 거부·재설정·중단·도달 불�
 
 `public-health` artifact에 경로별 HTTP 상태·시도·경과 시간·요청 한도·정적 실패 이유·재시도 여부와 최종 연속 정상 횟수를 보존한다. 응답 본문과 자격은 기록하지 않는다. Cloudflare 상세 오류 코드는 추출하지 않으며 HTTP 530만으로 원인을 확정하지 않는다.
 
-Server main은 현재 재사용 workflow와 `infra_sha`를 모두 `bdc15a71bfd478187932eeb063822e307022c323`으로 고정한다. 이 변경을 Infra에 머지하는 것만으로 Server 배포에 반영되지 않는다. Infra PR CI → Infra main 머지 → 해당 실제 SHA의 main push CI 성공 → Server의 새 CLI 구현과 두 SHA 참조를 같은 변경으로 반영 → develop·main CI 성공 → main 수동 배포 순서로 진행한다. 참조 갱신은 그때 존재하는 커밋만 사용한다. 현재는 새 SHA를 기입하거나 운영 배포하지 않았다.
+문제 실행의 Infra pin은 `bdc15a71bfd478187932eeb063822e307022c323`이었다. 현재 두 pin은 Server의 `.github/workflows/deploy-production.yml`에서 확인한다. 이 변경을 Infra에 머지하는 것만으로 Server 배포에 반영되지 않는다. Infra PR CI → Infra main 머지 → 해당 실제 SHA의 main push CI 성공 → Server의 새 CLI 구현과 두 SHA 참조를 같은 변경으로 반영 → develop·main CI 성공 → main 수동 배포 순서로 진행한다. 참조 갱신은 그때 존재하는 커밋만 사용한다. 해당 시점의 기록이며, 후속 실행과 pin 갱신의 실제 결과는 PR #1에 둔다.
 
 `Verify Cloudflare access manually`는 보호 origin의 읽기 검사도 수행한다. `home-origin-health`에는 설정·요청·응답 중 실패 단계, HTTP 상태 또는 제한한 네트워크 오류 코드만 저장한다. 비밀과 응답 본문은 기록하지 않는다. 이 기록 없이 origin 검사 실패를 자격·DNS·Tunnel 중 하나로 확정하지 않는다.
 
@@ -144,3 +144,11 @@ WIF 실패 시 `scripts/inspect-oidc-claims.py`는 GitHub 발급 토큰을 메�
 복구 lease가 존재하면 만료 여부와 관계없이 receiver·trusted deploy·control installer가 공통 deploy.lock 아래에서 거부합니다. 잘못된 파일이나 끊어진 symlink도 진행 허가로 취급하지 않습니다. 복구 timer/운영자의 검증된 recover가 lease를 해소한 후에만 배포합니다. 이로써 arm부터 자동 복구까지 컨테이너가 다른 배포로 교체되는 경합을 막습니다.
 
 예약 종료 후 Windows·Ubuntu가 실행 중이어도 기존 unless-stopped 컨테이너가 종료 상태를 유지한 사례를 확인했습니다. 새 release는 [ADR 0009](adr/0009-resume-after-scheduled-boot.md)에 따라 app·전용 cloudflared를 restart: always로 구성합니다. 명시적 stop 상태는 현재 daemon 안에서는 유지되므로 leased 장애 실험은 독립 timer로 복구합니다. 새 정책의 readback과 다음 실제 BIOS 부팅 관측은 구분합니다. `python3 scripts/verify-restart-policy.py --output /tmp/ziper-restart-policy.json`은 일회용 nested daemon만 재기동하며 테스트 후 해당 컨테이너·볼륨을 제거합니다.
+
+## 새 릴리스와 시도별 Discord 증거
+
+[ADR 0012](adr/0012-paired-deployment-receipts.md)에 따라 공개 검사에 `--expected-release "$GITHUB_SHA" --expected-origin home`을 함께 전달한다. 두 endpoint의 SHA와 origin이 일치해야 하며 이전 release의 UP 응답도 실패한다. 내부 180초 준비 한도를 유지하고 외부 프로세스 상한은 195초로 둔다.
+
+쌍 배포 artifact 이름은 `<기존 이름>-attempt-<github.run_attempt>`이다. registry-release의 두 다운로드도 같은 이름을 쓴다. Source CI의 tested-release는 별도 CI 실행의 검증된 JAR이며 이름을 바꾸지 않는다. 첫 성공 뒤 같은 workflow run을 전체 재실행하여 동일 SHA·config digest·JAR와 별도 Discord 메시지를 대조한다. 신규 dispatch로 변경된 main을 선택하지 않는다. 다음 실행 전 현재 release와 배포 잠금을 재확인한다.
+
+Discord는 wait=true POST 한 번, 같은 메시지 GET으로 채널·내용·ID를 대조한다. GET만 네트워크 오류·429·5xx에 최대 3회, 요청당 10초, 간격 2초로 제한한다. 인증·내용 불일치에는 재시도하지 않는다. `discord-deploy-receipt-attempt-N`에 비밀 없는 영수증을 남기며 unknown·posted는 confirmed가 아니다. 알림 실패만으로 서버를 다시 배포하지 않는다. 메시지 저장 확인은 개인 기기의 푸시 수신 증거가 아니다.
