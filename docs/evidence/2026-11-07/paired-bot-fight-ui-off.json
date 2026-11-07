@@ -1,0 +1,10 @@
+{
+  "checkedAt": "2026-11-07T06:54:28.265304+00:00",
+  "source": "Orca accessibility read of user-opened Cloudflare security settings",
+  "zone": "joonamin.dev",
+  "setting": "Bot Fight Mode",
+  "switchValue": 0,
+  "changedBy": "user",
+  "automationChangedSettings": false,
+  "scope": "UI readback only; no Bot Management API readback"
+}

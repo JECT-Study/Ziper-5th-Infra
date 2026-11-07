@@ -1,0 +1,30 @@
+{
+  "checkedAt": "2026-11-07T06:43:16.942177+00:00",
+  "host": "origin-ziper.joonamin.dev",
+  "credentialSource": "dedicated",
+  "readOnly": true,
+  "eventsReadable": true,
+  "events": [],
+  "scope": "At most20 sampled historical events for protected readyz; settings alone do not establish the cause",
+  "zoneLookupHttpStatus": 200,
+  "settings": {
+    "security_level": {
+      "httpStatus": 403,
+      "value": null
+    },
+    "browser_check": {
+      "httpStatus": 403,
+      "value": null
+    }
+  },
+  "botFightMode": {
+    "httpStatus": 403,
+    "enabled": null
+  },
+  "eventsHttpStatus": 200,
+  "window": {
+    "datetime_geq": "2026-11-07T04:43:17Z",
+    "datetime_leq": "2026-11-07T06:43:17Z"
+  },
+  "eventsResult": "readable"
+}

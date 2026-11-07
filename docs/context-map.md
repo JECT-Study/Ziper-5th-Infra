@@ -33,3 +33,5 @@
 - [0011 기존 집어 컨테이너 재기동 정책의 정합](adr/0011-reconcile-existing-restart-policy.md)
 
 - [0012 쌍 배포의 릴리스 식별과 시도별 알림 증거](adr/0012-paired-deployment-receipts.md)
+
+- [0013 무료 Bot Fight Mode와 자동 상태 검사](adr/0013-free-bot-fight-mode-and-machine-probes.md)
