@@ -28,4 +28,6 @@ Infra main의 성공한 실제 SHA를 확인한 뒤 Server 구현과 workflow의
 
 180초에는 요청·본문 읽기·대기 시간이 포함되며 CLI 준비와 결과 저장은 제외한다. POSIX 타이머를 지원하는 Linux runner와 macOS에서 실행한다. 준비 시간은 일시적 530을 흡수할 수 있지만 530의 과거 원인을 증명하지 않는다. 검사 성공은 Cloud Run failover·600초 목표·장기 uptime·Discord 성공 알림을 증명하지 않는다.
 
-Linux workflow는 `timeout --signal=KILL 180s`로 검사 프로세스 전체에도 상한을 적용한다. Python 신호 처리가 지연되는 경우도 운영 단계가 계속 대기하지 않는다. 검사 JSON은 요청 전후 원자적으로 갱신하므로 강제 종료 시 마지막 경로·시도와 미수신 상태를 확인할 수 있다. 이 경우 `termination: running`은 성공을 뜻하지 않으며 Actions의 강제 종료 결과와 함께 실패로 판정한다.
+Linux workflow는 `timeout --signal=KILL 195s`로 검사 프로세스 전체에도 상한을 적용한다. Python 신호 처리가 지연되는 경우도 운영 단계가 계속 대기하지 않는다. 검사 JSON은 요청 전후 원자적으로 갱신하므로 강제 종료 시 마지막 경로·시도와 미수신 상태를 확인할 수 있다. 이 경우 `termination: running`은 성공을 뜻하지 않으며 Actions의 강제 종료 결과와 함께 실패로 판정한다.
+
+2026-11-07 [ADR 0012](0012-paired-deployment-receipts.md)는 내부 180초 뒤 결과 저장을 위해 외부 한도를 195초로 두고, 예상 release·origin 검증을 추가한다. 이 결정의 채택과 실제 운영 통과는 별도 증거로 확인한다.

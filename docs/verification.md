@@ -140,3 +140,7 @@ Server 실행 [42250905425](https://github.com/JECT-Study/Ziper-5th-Server/actio
 ## 2026-11-07 기존 컨테이너 정책 정합
 
 검토된 main317bba3와 CI42310352848 성공 뒤 실제 두 컨테이너를 always로 정합했습니다. 적용2건·반복0건 모두 ID·StartedAt·참조 파일을 보존했고 공개 health3쌍을 통과했습니다. [실제 적용](evidence/2026-11-07/existing-restart-applied.json)·[반복](evidence/2026-11-07/existing-restart-repeat.json)·[공개 검사](evidence/2026-11-07/home-public-health-after-policy.json)를 참조합니다. 새 앱·Cloud Run·Worker 배포와 fault E2E는 미완료입니다.
+
+## 새 이미지 쌍 배포와 반복 검증의 판정
+
+[ADR 0012](adr/0012-paired-deployment-receipts.md)의 구현은 release·origin 일치와 시도별 artifact·Discord POST/GET 영수증을 추가한다. 코드·로컬·CI·운영 결과를 구분하고 실제 실행 전에는 이 절을 통과 증거로 읽지 않는다. 최초 전체 성공 뒤 같은 run의 전체 재실행도 성공해야 반복 검증을 통과한다. 각 시도의 source/Infra SHA, GHCR/AR 식별자, runtime probes, 보류 여부와 서로 다른 Discord message ID를 PR #1에서 대조한다. Worker 전환·장애 주입·600초 복구는 별도 미검증 범위다.
