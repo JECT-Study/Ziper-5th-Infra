@@ -1,0 +1,10 @@
+{
+  "checkedAt": "2026-11-07T06:47:17.014171+00:00",
+  "host": "origin-ziper.joonamin.dev",
+  "path": "/readyz",
+  "client": "local_python",
+  "status": 200,
+  "cloudflareChallenge": false,
+  "ray": "a56a62c1dbf11476-LAX",
+  "statusOnlyUp": true
+}

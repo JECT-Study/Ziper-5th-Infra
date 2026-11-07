@@ -1,0 +1,19 @@
+{
+  "source": "user-provided Cloudflare Security Events screenshot, 2026-11-07 15:49 KST",
+  "rawScreenshotCommitted": false,
+  "eventAt": "2026-11-06T21:52:35Z",
+  "ray": "a567537eb909e241",
+  "host": "origin-ziper.joonamin.dev",
+  "path": "/readyz",
+  "method": "GET",
+  "userAgent": "ziper-deployment-verification",
+  "service": "Bot Fight Mode",
+  "action": "managedChallenge",
+  "correlation": {
+    "runUrl": "https://github.com/JECT-Study/Ziper-5th-Infra/actions/runs/42300183067",
+    "recordedAt": "2026-11-06T21:52:35.406Z",
+    "sameSecondHostPathAndAgent": true,
+    "rayRecordedByOriginalVerifier": false
+  },
+  "scope": "Provider event identifies the product for a matching historical failed probe. Recent API samples were empty; later requests still require separate verification. IP, account email and unrelated traffic omitted."
+}
