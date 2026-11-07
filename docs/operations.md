@@ -79,7 +79,7 @@ deploy job은 packages:read의 별도 job 토큰과 작은 metadata JSON만 SSH�
 
 ## 예약 운영·운영 관측 준비
 
-예약 시간과 예산 목표는 `config/production.json`, 정책은 ADR 0002를 따른다. `node scripts/deployment-window.ts`는 배포 가능 여부를 GITHUB_OUTPUT의 `deferred`와 실행 요약에 기록한다. `node scripts/notify-discord.ts`는 등록한 webhook을 사용하며 채널 ID를 대조하고 메시지 ID만 기록한다. 두 스크립트는 `deploy-home.yml`에 연결했다. 실제 전송 여부는 실행별 메시지 ID로 확인한다.
+예약 시간과 예산 목표는 `config/production.json`, 정책은 ADR 0002를 따른다. `node scripts/deployment-window.ts`는 배포 가능 여부를 GITHUB_OUTPUT의 `deferred`와 실행 요약에 기록한다. `node scripts/notify-discord.ts`는 등록한 webhook으로 한 번 전송한 뒤 같은 메시지를 조회해 채널·내용·ID를 대조하고 시도별 영수증을 남긴다. 두 스크립트는 `deploy-home.yml`에 연결했다. 실제 전송 여부는 실행별 메시지 ID로 확인한다.
 
 `OPS_READ_TOKEN`은 최소 32자 전용 비밀로 생성해 Worker와 외부 검증 제어기에만 등록한다. `/_ops/circuit`에 GET과 Bearer 인증으로 접근한다. 사용자 JWT와 다른 토큰이며 query string에 넣지 않는다. 조회는 상태·최근 전이·다음 alarm만 반환하고 표본·회로를 변경하지 않는다. 운영 배포 생성기는 이 Secret 없이는 차단한다.
 

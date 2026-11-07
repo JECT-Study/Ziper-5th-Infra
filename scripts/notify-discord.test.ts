@@ -15,6 +15,7 @@ const cases = [
   { mode: "success", success: true, gets: 1, state: "confirmed" },
   { mode: "get-transient", success: true, gets: 3, state: "confirmed" },
   { mode: "get-network", success: true, gets: 3, state: "confirmed" },
+  { mode: "get-body-network", success: true, gets: 3, state: "confirmed" },
   { mode: "post-timeout", success: false, gets: 0, state: "unknown" },
   { mode: "post-rejected", success: false, gets: 0, state: "rejected" },
   { mode: "post-content", success: false, gets: 0, state: "posted" },
@@ -22,6 +23,7 @@ const cases = [
   { mode: "get-auth", success: false, gets: 1, state: "posted" },
   { mode: "get-persistent", success: false, gets: 3, state: "posted" },
   { mode: "get-content", success: false, gets: 1, state: "posted" },
+  { mode: "get-json", success: false, gets: 1, state: "posted" },
   { mode: "get-id", success: false, gets: 1, state: "posted" }
 ];
 for (const fixture of cases) {
@@ -58,9 +60,13 @@ for (const fixture of cases) {
           assert.equal(init.method, "GET"); trace.gets++;
           assert.equal(String(url), process.env.DISCORD_DEPLOY_WEBHOOK_URL + "/messages/987654321");
           if (mode === "get-network" && trace.gets < 3) throw new Error("fixture-private-response");
+          if (mode === "get-body-network" && trace.gets < 3) return new Response(new ReadableStream({
+            start(controller) { controller.error(new TypeError("fixture-private-response")); }
+          }));
           if (mode === "get-transient" && trace.gets < 3) return new Response("fixture-private-response", { status: trace.gets === 1 ? 429 : 503 });
           if (mode === "get-auth") return new Response("fixture-private-response", { status: 403 });
           if (mode === "get-persistent") return new Response("fixture-private-response", { status: 503 });
+          if (mode === "get-json") return new Response("fixture-private-response", { status: 200 });
           return Response.json({ id: mode === "get-id" ? "111111111" : "987654321", channel_id: "1566809692779323402",
             content: mode === "get-content" ? "fixture-private-response" : content });
         };

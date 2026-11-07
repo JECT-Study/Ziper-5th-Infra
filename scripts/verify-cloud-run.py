@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 import re
+import sys
 import time
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
