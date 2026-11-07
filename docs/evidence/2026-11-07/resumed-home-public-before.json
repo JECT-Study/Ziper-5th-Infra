@@ -1,0 +1,49 @@
+{
+  "checkedAt": "2026-11-07T12:29:13.680222+00:00",
+  "origin": "https://api-ziper.joonamin.dev",
+  "ok": true,
+  "samples": [
+    [
+      {
+        "path": "/livez",
+        "status": 200,
+        "noStore": true,
+        "statusOnly": true,
+        "release": "263558f6f2cf97ad717f71335c95c49214ae908c",
+        "upstreamOrigin": "home"
+      },
+      {
+        "path": "/readyz",
+        "status": 200,
+        "noStore": true,
+        "statusOnly": true,
+        "release": "263558f6f2cf97ad717f71335c95c49214ae908c",
+        "upstreamOrigin": "home"
+      }
+    ]
+  ],
+  "events": [
+    {
+      "attempt": 1,
+      "path": "/livez",
+      "elapsedSeconds": 1.969,
+      "timeoutSeconds": 10,
+      "status": 200,
+      "retryable": false,
+      "result": "healthy"
+    },
+    {
+      "attempt": 1,
+      "path": "/readyz",
+      "elapsedSeconds": 3.537,
+      "timeoutSeconds": 10,
+      "status": 200,
+      "retryable": false,
+      "result": "healthy"
+    }
+  ],
+  "attempts": 1,
+  "consecutiveSuccesses": 1,
+  "termination": "healthy",
+  "elapsedSeconds": 3.538
+}

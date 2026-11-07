@@ -1,0 +1,27 @@
+{
+  "release": "e3eb3538f1a3cf18f1de80e3b56b738ebb41a774",
+  "recoveryLeaseExists": false,
+  "containers": [
+    {
+      "id": "711f6f4b58dbca752d83e13fcc81bedb30f496ce1d6e07a361c8825ee1e25ec7",
+      "service": "cloudflared",
+      "imageId": "sha256:4955524aeaa379e154023d5a027c250f7b35041a2e7e950cf13f144bc9b9c5ba",
+      "running": true,
+      "startedAt": "2026-11-07T12:43:22.728944218Z",
+      "restartPolicy": "always"
+    },
+    {
+      "id": "f7e5c44da25a222a8ecf96012569f88055aa1c0de48869aba243fed7c8bba520",
+      "service": "app",
+      "imageId": "sha256:37774b17d91b6cd4ee5a9180fbcd48bf3483f96fac952303ba5a5163d19d3a82",
+      "running": true,
+      "startedAt": "2026-11-07T12:42:49.879138682Z",
+      "restartPolicy": "always",
+      "sourceSha": "e3eb3538f1a3cf18f1de80e3b56b738ebb41a774",
+      "origin": "home",
+      "jarSha256": "bc9ed07d6e688c35b6cde39c26ced63bb6c5daf56fd1d4b66961366940dcbc78",
+      "imageIdentityMatches": true
+    }
+  ],
+  "checkedAt": "2026-11-07T12:45:57.876221+00:00"
+}

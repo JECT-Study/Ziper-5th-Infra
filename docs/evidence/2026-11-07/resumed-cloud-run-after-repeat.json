@@ -1,0 +1,14 @@
+{
+  "checkedAt": "2026-11-07T12:52:47.544623+00:00",
+  "revision": "ziper-backup-se3eb3538f1a3cf18f1de80e3b56b738ebb41a774",
+  "revisionConfigurationMatches": true,
+  "ready": true,
+  "traffic100": true,
+  "serviceLimitsMatch": true,
+  "volumeCount": 2,
+  "volumeMountCount": 2,
+  "revisionCreatedAt": "2026-11-07T12:40:17.180094Z",
+  "repeatStartedAt": "2026-11-07T12:46:13Z",
+  "revisionPredatesRepeat": true,
+  "image": "asia-southeast1-docker.pkg.dev/ziper-production/ziper-releases/ziper-server@sha256:37774b17d91b6cd4ee5a9180fbcd48bf3483f96fac952303ba5a5163d19d3a82"
+}

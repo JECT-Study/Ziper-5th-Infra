@@ -1,0 +1,43 @@
+{
+  "checkedAt": "2026-11-07T12:48:56.613087+00:00",
+  "sourceSha": "e3eb3538f1a3cf18f1de80e3b56b738ebb41a774",
+  "ok": true,
+  "samples": [
+    [
+      {
+        "path": "/livez",
+        "ok": true,
+        "status": 200
+      },
+      {
+        "path": "/readyz",
+        "ok": true,
+        "status": 200
+      }
+    ],
+    [
+      {
+        "path": "/livez",
+        "ok": true,
+        "status": 200
+      },
+      {
+        "path": "/readyz",
+        "ok": true,
+        "status": 200
+      }
+    ],
+    [
+      {
+        "path": "/livez",
+        "ok": true,
+        "status": 200
+      },
+      {
+        "path": "/readyz",
+        "ok": true,
+        "status": 200
+      }
+    ]
+  ]
+}

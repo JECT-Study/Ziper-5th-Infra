@@ -1,0 +1,19 @@
+{
+  "checkedAt": "2026-11-07T12:41:44.614271+00:00",
+  "ready": "True",
+  "latestReadyRevisionName": "ziper-backup-se3eb3538f1a3cf18f1de80e3b56b738ebb41a774",
+  "latestCreatedRevisionName": "ziper-backup-se3eb3538f1a3cf18f1de80e3b56b738ebb41a774",
+  "traffic": [
+    {
+      "latestRevision": true,
+      "percent": 100,
+      "revisionName": "ziper-backup-se3eb3538f1a3cf18f1de80e3b56b738ebb41a774"
+    }
+  ],
+  "volumeCount": 2,
+  "volumeMountCount": 2,
+  "image": "asia-southeast1-docker.pkg.dev/ziper-production/ziper-releases/ziper-server@sha256:37774b17d91b6cd4ee5a9180fbcd48bf3483f96fac952303ba5a5163d19d3a82",
+  "serviceAnnotations": {
+    "run.googleapis.com/maxScale": "1"
+  }
+}

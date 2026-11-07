@@ -164,3 +164,7 @@ Cloud SDK592의 run services/revisions describe는 없는 객체에 NOT_FOUND �
 새 source revision의 단일 `gcloud run deploy` 명령은 `--clear-volume-mounts --clear-volumes`와 기존 `--set-secrets`를 함께 전달한다. SDK592는 `--set-secrets` 갱신 시 이전 마운트만 지우고 사용하지 않는 볼륨을 남겼다. 전체 볼륨을 정리한 뒤 필요한 두 Secret 파일을 같은 요청의 최종 구성으로 만든다. 빈 Secret 상태를 별도 배포하지 않는다. 기존 revision의 정확한 두 볼륨·마운트·Secret 버전1 검사는 유지하며, 같은 source 재실행은 검증된 revision을 읽고 재사용한다. 범위는 전용 `ziper-backup` 단일 컨테이너이며 기존 다른 볼륨을 보존하는 일반 배포 도구가 아니다.
 
 설정의 두 목록 제거는 [공식 문서](https://docs.cloud.google.com/run/docs/configuring/services/cloud-storage-volume-mounts)의 옵션을 사용한다. SDK592의 구성 변경 순서는 마운트 제거 → 볼륨 제거 → Secret 추가이며, 실제 재현과 새 runtime 통과는 PR 실행 증거로 구분한다.
+
+### 쌍 배포 증거 대조
+
+`scripts/verify-paired-evidence.py`는 시도별 `run.json`, `jobs.json`, `artifacts.json`과 내려받은 artifact를 대조한다. 같은 main SHA·고정 Infra SHA·run/attempt의 네 job 성공, 전달 증거·이미지·양쪽 health·Discord 조회가 모두 일치해야 통과한다. 최초 성공 뒤 같은 run을 전체 재실행하고 `--compare`에 최초 검증 결과를 넘겨 이미지·revision 유지와 서로 다른 성공 메시지를 확인한다. 제공된 자료의 일관성 검사이며 별도 provider 조회나 Worker 장애·전환 실험을 대신하지 않는다. `test-paired-evidence.py`는 보존한 실제 성공 자료를 복사·변조해 다른 시도의 job, 다른 run의 artifact, 오래된 릴리스·누락된 전달·실패한 Discord 조회를 거부하는지 검사한다.

@@ -1,0 +1,12 @@
+{
+  "resumedAt": "2026-11-07T12:37:51.586914+00:00",
+  "sourceSha": "e3eb3538f1a3cf18f1de80e3b56b738ebb41a774",
+  "infraSha": "4a0e5b1d71c7107a6b8200d1fe6ab02547041135",
+  "infraPullRequest": 22,
+  "sourcePullRequest": 41,
+  "infraMainCi": 42372626175,
+  "sourceMainCi": 42373136981,
+  "runId": 42373294683,
+  "initialState": "Home old release healthy; Cloud Run old revision Ready with four volumes; no recovery lease; installed home control hashes match the new Infra pin.",
+  "scope": "Paired deployment and repeat verification; Worker fault/failover is separate."
+}

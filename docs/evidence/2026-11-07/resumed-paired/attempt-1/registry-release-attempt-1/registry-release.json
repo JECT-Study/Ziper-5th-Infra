@@ -1,0 +1,7 @@
+{
+  "sourceSha": "e3eb3538f1a3cf18f1de80e3b56b738ebb41a774",
+  "registryImage": "ghcr.io/ject-study/ziper-server",
+  "imageManifestDigest": "sha256:37774b17d91b6cd4ee5a9180fbcd48bf3483f96fac952303ba5a5163d19d3a82",
+  "imageConfigDigest": "sha256:9fc0dc4bcd579d879e1595652dc1219b70e9d4baab37a643de7469771a5a26db",
+  "jarSha256": "bc9ed07d6e688c35b6cde39c26ced63bb6c5daf56fd1d4b66961366940dcbc78"
+}

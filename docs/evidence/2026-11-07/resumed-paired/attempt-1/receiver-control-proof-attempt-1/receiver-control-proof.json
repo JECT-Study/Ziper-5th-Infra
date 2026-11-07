@@ -1,0 +1,11 @@
+{
+  "checkedAt": "2026-11-07T12:42:21.950893+00:00",
+  "scope": "Restricted SSH control and registry pull",
+  "checks": {
+    "check": true,
+    "generalCommandDenied": true,
+    "registryDeploy": true
+  },
+  "result": "passed",
+  "payloadBytes": 812
+}

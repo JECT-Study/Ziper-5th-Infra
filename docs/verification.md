@@ -156,3 +156,16 @@ Source42350926001은 Cloud Run 생성과 비공개3쌍200을 통과했지만 Hom
 ### 2026-11-07 Cloud Run 볼륨 갱신 실패
 
 [42355650907](https://github.com/JECT-Study/Ziper-5th-Server/actions/runs/42355650907)은 새 d62b160 revision의 실제 Ready·traffic100 뒤 구성 검사에서 실패했다. 이미지·환경·리소스·startup probe는 맞았지만 SDK592의 `--set-secrets`가 미사용 이전 볼륨2개를 남겨 총4개였다. Home 배포는 skip했고 이를 쌍 배포 성공으로 계산하지 않는다. 기존 회귀에 새 revision의 볼륨 교체가 한 번의 mutation에 포함되는 조건을 추가했다. 수정 전 `--clear-volumes` 부재로 실패하고 두 clear 옵션 추가 후28개가 통과했다. 실제 새 배포와 동일 revision 반복은 후속 운영 증거에서 판정한다.
+
+
+## 2026-11-07 21시 작업 재개와 쌍 배포 성공
+
+사용량 제한으로 멈춘 codex2 작업을 재개했다. Infra #22를 main에 병합하고 해당 CI42372626175 성공 뒤 Server #41의 두 pin을 같은 4a0e5b1로 갱신했다. 로컬 pre-push에서 재현한 Python3.9 socket의 인수 없는 TimeoutError 처리 오류는 ETIMEDOUT 코드로 수정했다. 실제 느린 본문 회귀와 전체 사전 검사·PR/main CI를 통과했다. develop 동기화 #42도 CI 후 병합했다. Sentry 계측 PR #38은 이 배포에 포함하지 않았다.
+
+[운영 실행42373294683](https://github.com/JECT-Study/Ziper-5th-Server/actions/runs/42373294683)의 시도1은21:44:47, 전체 재실행 시도2는21:51:42 KST에 성공했다. 각 시도의 네 job·고정 Infra·artifact 출처·Home 전달·양쪽 probe3쌍·보류 없음·Discord POST/GET confirmed를 대조했다. Source e3eb3538f1a3cf18f1de80e3b56b738ebb41a774와 이미지 config9fc0dc4b…·JAR bc9ed07d…·manifest37774b17…·revision이 같았다. Discord message1568607133845430345와1568608871524728832는 별개이며 채널1566809692779323402의 성공 메시지다. 개인 기기의 푸시 수신을 뜻하지 않는다.
+
+독립 Home 조회에서도 현재 release·실행 JAR 해시·이미지 식별·running/always 두 컨테이너·lease 부재를 확인했다. 두 시도 사이 ID와 StartedAt도 같았다. GCP 조회는 Ready·traffic100·원래 제한·정확한 revision 구성·볼륨2/마운트2를 확인했으며 생성 시각은 두 번째 실행보다 앞선다. 익명 Cloud Run probe는403이다. Cloud Run 월 KRW1,000 cap을 다시 조회했고 다른 서비스 비용·실제 청구액·절대 상한은 검증하지 않았다.
+
+[최초 대조](evidence/2026-11-07/resumed-paired/first-verified.json)·[반복 대조](evidence/2026-11-07/resumed-paired/repeat-verified.json), [Home 재조회](evidence/2026-11-07/resumed-home-after-repeat.json), [GCP 재조회](evidence/2026-11-07/resumed-cloud-run-after-repeat.json)에 실제 증거가 있다. run/jobs/artifacts JSON은 GitHub API에서 필요한 필드만 선별한 snapshot이며 원격 자료의 출처를 ID로 재조회할 수 있다. 증거 검사기의 회귀11개는 실제 성공 snapshot과 변조본으로 다른 run/attempt, 오래된 Home·공개 응답, 다른 registry, 전달 증거 누락, Discord 조회 실패와 첫 메시지 재사용을 거부했다.
+
+Worker 배포·분 단위 표본·실제 장애 주입·600초 failover·HALF_OPEN/CLOSED·다음 전체 장비 부팅은 미실행이다. 현재 쌍 배포 성공과 전체 운영 장애 E2E의 미완료를 [상태 파일](evidence/2026-11-07/e2e-status.json)에서 분리한다.

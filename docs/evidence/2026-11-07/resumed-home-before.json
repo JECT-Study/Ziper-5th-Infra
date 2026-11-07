@@ -1,0 +1,23 @@
+{
+  "controlHashesMatch": true,
+  "release": "263558f6f2cf97ad717f71335c95c49214ae908c",
+  "recoveryLeaseExists": false,
+  "containers": [
+    {
+      "id": "373a81a6ea78adda683d5488531c0a8e45013727fa038f4f1f026d4c1afd7eb9",
+      "service": "app",
+      "imageId": "sha256:3bafaa967a8b0533243ae6277cb2a62a56741d08bbbf7fee190a4c3ccf1da46b",
+      "running": true,
+      "startedAt": "2026-11-06T21:09:54.692311375Z",
+      "restartPolicy": "always"
+    },
+    {
+      "id": "b1d8fddb7e17ce1d16899460e858ce9152e2c6fedd5420e601a09b6e3b300898",
+      "service": "cloudflared",
+      "imageId": "sha256:4955524aeaa379e154023d5a027c250f7b35041a2e7e950cf13f144bc9b9c5ba",
+      "running": true,
+      "startedAt": "2026-11-06T21:09:55.337416028Z",
+      "restartPolicy": "always"
+    }
+  ]
+}

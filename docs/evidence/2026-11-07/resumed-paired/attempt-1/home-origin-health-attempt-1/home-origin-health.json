@@ -1,0 +1,12 @@
+{
+  "checkedAt": "2026-11-07T12:40:07.528Z",
+  "credentialIdPresent": true,
+  "credentialSecretPresent": true,
+  "expectedCredentialChecksumPresent": true,
+  "credentialsMatchExpected": true,
+  "stage": "response",
+  "status": 200,
+  "ok": true,
+  "cloudflareChallenge": false,
+  "cloudflareErrorCode": null
+}
