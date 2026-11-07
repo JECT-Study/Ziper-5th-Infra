@@ -1,3 +1,4 @@
+import base64
 import hashlib
 import importlib.util
 import io
@@ -16,6 +17,7 @@ from urllib.error import HTTPError
 HOME = Path(__file__).resolve().parents[1] / 'deployment/home'
 sys.path.insert(0, str(HOME))
 import registry_release
+import image_identity
 
 
 def load(name, path):
@@ -31,12 +33,17 @@ VERSION, PREVIOUS = 'a' * 40, 'b' * 40
 CONFIG = json.dumps({'os': 'linux', 'architecture': 'amd64', 'rootfs': {'type': 'layers', 'diff_ids': []}}).encode()
 CONFIG_DIGEST = 'sha256:' + hashlib.sha256(CONFIG).hexdigest()
 JAR = b'tested-jar-fixture'
-NEW_ID, OLD_ID = 'sha256:' + 'd' * 64, 'sha256:' + 'e' * 64
+REGISTRY_MANIFEST = {'schemaVersion': 2, 'mediaType': 'application/vnd.docker.distribution.manifest.v2+json',
+                    'config': {'mediaType': 'application/vnd.docker.container.image.v1+json',
+                               'size': len(CONFIG), 'digest': CONFIG_DIGEST}, 'layers': []}
+REGISTRY_RAW = json.dumps(REGISTRY_MANIFEST).encode()
+REGISTRY_DIGEST = 'sha256:' + hashlib.sha256(REGISTRY_RAW).hexdigest()
+NEW_ID, OLD_ID = REGISTRY_DIGEST, 'sha256:' + 'e' * 64
 
 
 def manifest():
     return {'sourceSha': VERSION, 'registryImage': registry_release.REPOSITORY,
-            'imageManifestDigest': 'sha256:' + 'c' * 64, 'imageConfigDigest': CONFIG_DIGEST,
+            'imageManifestDigest': REGISTRY_DIGEST, 'imageConfigDigest': CONFIG_DIGEST,
             'jarSha256': hashlib.sha256(JAR).hexdigest()}
 
 
@@ -62,6 +69,11 @@ class Fixture:
             (private / name).write_text('fixture')
         (self.root / 'fixture.jar').write_bytes(JAR)
         (self.root / 'config.json').write_bytes(CONFIG)
+        descriptor = {'digest': REGISTRY_DIGEST, 'size': len(REGISTRY_RAW),
+                      'mediaType': REGISTRY_MANIFEST['mediaType'], 'platform': {'os': 'linux', 'architecture': 'amd64'}}
+        (self.root / 'registry-verbose.json').write_text(json.dumps({
+            'Ref': registry_release.REPOSITORY + '@' + REGISTRY_DIGEST, 'Descriptor': descriptor,
+            'Raw': base64.b64encode(REGISTRY_RAW).decode(), 'SchemaV2Manifest': REGISTRY_MANIFEST}))
         (self.root / 'tags.json').write_text(json.dumps({'ziper-server:' + VERSION: OLD_ID,
                                                         'ziper-server:' + PREVIOUS: OLD_ID}))
         (self.root / 'deploy.lock').touch()
@@ -84,19 +96,27 @@ import fcntl,hashlib,io,json,os,pathlib,sys,tarfile
 + except BlockingIOError:held=True
 +with (r/'commands').open('a') as f:f.write(json.dumps({'args':a,'lockHeld':held})+'\\n')
 +tags=json.loads((r/'tags.json').read_text())
++registry=json.loads((r/'registry-verbose.json').read_text());new_id=registry['Descriptor']['digest']
 +if a[0]=='login':
 + token=sys.stdin.read();d=pathlib.Path(os.environ['DOCKER_CONFIG']);d.mkdir(exist_ok=True)
 + (d/'config.json').write_text(token);(r/'auth-directory').write_text(str(d))
-+elif a[0]=='tag':tags[a[2]]=tags.get(a[1],'sha256:'+'d'*64);(r/'tags.json').write_text(json.dumps(tags))
++elif a[0]=='tag':tags[a[2]]=tags.get(a[1],new_id);(r/'tags.json').write_text(json.dumps(tags))
++elif a[:2]==['manifest','inspect']:print(json.dumps(registry))
 +elif a[0]=='save':
 + c=(r/'config.json').read_bytes();h=hashlib.sha256(c).hexdigest()
 + m=json.dumps([{'Config':h+'.json','RepoTags':[a[1]],'Layers':[]}]).encode()
 + with tarfile.open(fileobj=sys.stdout.buffer,mode='w|') as t:
 +  for n,b in [('manifest.json',m),(h+'.json',c)]:
++   if (r/'broken-export').exists() and n!='manifest.json':continue
 +   x=tarfile.TarInfo(n);x.size=len(b);t.addfile(x,io.BytesIO(b))
 +elif a[0]=='create':print('fixture-container')
 +elif a[0]=='cp':pathlib.Path(a[-1]).write_bytes((r/'fixture.jar').read_bytes())
-+elif a[:2]==['image','inspect']:print(tags.get(a[-1],'sha256:'+'d'*64))
++elif a[:2]==['image','inspect']:
++ if '--format' in a:print(tags.get(a[-1],new_id))
++ else:
++  c=json.loads((r/'config.json').read_text())
++  print(json.dumps([{'Id':tags.get(a[-1],new_id),'Os':c['os'],'Architecture':c['architecture'],
++   'Descriptor':registry['Descriptor'],'RootFS':{'Type':c['rootfs']['type'],'Layers':c['rootfs']['diff_ids']}}]))
 +elif a[:2]==['image','rm']:tags.pop(a[-1],None);(r/'tags.json').write_text(json.dumps(tags))
 +elif a[0]=='compose':
 + version=pathlib.Path(a[a.index('-f')+1]).parent.name;cmd=a[a.index('-f')+2:]
@@ -129,6 +149,17 @@ import fcntl,hashlib,io,json,os,pathlib,sys,tarfile
 
 
 class RegistryTests(unittest.TestCase):
+    def test_incomplete_daemon_export_does_not_block_verified_registry_pull(self):
+        f = self.fixture()
+        (f.root / 'broken-export').touch()
+        archive = subprocess.check_output(['docker', 'save', 'ziper-server:' + VERSION], env=f.env)
+        with self.assertRaises(SystemExit):
+            image_identity.image_config_digest(io.BytesIO(archive), 'ziper-server:' + VERSION)
+        with patch.dict(os.environ, f.env, clear=True):
+            receiver.deploy_registry(VERSION, io.BytesIO(payload()), f.root)
+        self.assertEqual((f.root / 'current-version').read_text().strip(), VERSION)
+        self.assertEqual((f.root / 'current-runtime').read_text(), VERSION)
+
     def fixture(self):
         fixture = Fixture()
         self.addCleanup(fixture.close)

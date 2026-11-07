@@ -1,0 +1,14 @@
+{
+  "dockerExecutable": "/usr/bin/docker",
+  "clientVersion": "29.2.1",
+  "serverVersion": "29.2.1",
+  "dockerId": "sha256:8283cc325f2c22a3f14ca4fec44774cb71f83acc5ce9e5b3b737969d3050fef7",
+  "os": "linux",
+  "architecture": "amd64",
+  "descriptorMediaType": "application/vnd.docker.distribution.manifest.v2+json",
+  "descriptorDigest": "sha256:8283cc325f2c22a3f14ca4fec44774cb71f83acc5ce9e5b3b737969d3050fef7",
+  "rootfsType": "layers",
+  "rootfsLayers": 8,
+  "configPresent": true,
+  "repoDigestCount": 1
+}

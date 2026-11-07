@@ -1,0 +1,10 @@
+{
+  "validatedConfigDigest": "sha256:b83d3539f4d577d0d86581bc887cf211057dcbdbfbe6e77f0f6e4168057728fa",
+  "engineDockerId": "sha256:8283cc325f2c22a3f14ca4fec44774cb71f83acc5ce9e5b3b737969d3050fef7",
+  "enginePlatform": "linux/amd64",
+  "engineLayerCount": 8,
+  "runtimeChanged": false,
+  "registryReadClient": "Mac authenticated registry CLI",
+  "engineReadClient": "Home Docker29.2.1",
+  "homeRegistryCliExercised": false
+}

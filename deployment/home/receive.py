@@ -10,7 +10,7 @@ import secrets
 import subprocess
 import sys
 import tempfile
-from image_identity import loaded_image_config_digest
+from image_identity import pulled_image_config_digest
 from registry_release import REPOSITORY, ensure_runtime_window, file_sha256, read_payload
 
 
@@ -67,7 +67,7 @@ def deploy_registry_locked(version, manifest, username, token, root, lock_fd):
             raise SystemExit('Registry image pull failed')
         try:
             subprocess.run(['docker', 'tag', image, verification_tag], env=env, check=True, capture_output=True)
-            if loaded_image_config_digest(verification_tag, env, root) != manifest['imageConfigDigest']:
+            if pulled_image_config_digest(image, verification_tag, env) != manifest['imageConfigDigest']:
                 raise SystemExit('Pulled image config differs from manifest')
             container = subprocess.check_output(['docker', 'create', verification_tag], env=env, text=True).strip()
             try:
