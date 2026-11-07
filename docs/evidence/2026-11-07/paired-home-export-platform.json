@@ -1,0 +1,31 @@
+{
+  "runtimeChanged": false,
+  "default": {
+    "exitCode": 0,
+    "identityRejected": true,
+    "entries": 1,
+    "configMetadata": [
+      {
+        "keys": [
+          "Config",
+          "Layers",
+          "RepoTags"
+        ],
+        "configRef": "blobs/sha256/b83d3539f4d577d0d86581bc887cf211057dcbdbfbe6e77f0f6e4168057728fa",
+        "configPresent": false,
+        "suffixMatches": [],
+        "sampleNames": [
+          "blobs",
+          "blobs/sha256",
+          "blobs/sha256/8283cc325f2c22a3f14ca4fec44774cb71f83acc5ce9e5b3b737969d3050fef7",
+          "index.json",
+          "manifest.json",
+          "oci-layout"
+        ]
+      }
+    ]
+  },
+  "amd64": {
+    "exitCode": 1
+  }
+}

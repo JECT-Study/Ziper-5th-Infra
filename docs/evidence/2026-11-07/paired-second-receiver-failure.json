@@ -1,0 +1,12 @@
+{
+  "checkedAt": "2026-11-07T07:26:25.398667+00:00",
+  "scope": "Restricted SSH control and registry pull",
+  "checks": {
+    "check": true,
+    "generalCommandDenied": true
+  },
+  "result": "failed",
+  "payloadBytes": 812,
+  "receiverExitCode": 1,
+  "receiverFailure": "ssh_or_receiver_failure"
+}

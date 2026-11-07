@@ -35,3 +35,5 @@
 - [0012 쌍 배포의 릴리스 식별과 시도별 알림 증거](adr/0012-paired-deployment-receipts.md)
 
 - [0013 무료 Bot Fight Mode와 자동 상태 검사](adr/0013-free-bot-fight-mode-and-machine-probes.md)
+
+- [0014 홈 이미지의 Registry manifest 식별과 Docker export 의존 제거](adr/0014-registry-manifest-identity-on-home.md)

@@ -150,3 +150,5 @@ Server 실행 [42250905425](https://github.com/JECT-Study/Ziper-5th-Server/actio
 후속 쌍 배포 증거 보완의 로컬 전체 검사는 Workers32·Node23·Python65, 총120개와 타입·린트·번들을 통과했다. actionlint도 통과했다. 이 결과에는 실제 Cloud Run 생성·홈 이미지 교체·성공 Discord가 포함되지 않는다. 새 읽기 전용 실행42347844427은 자격 일치와403 challenge, 전용 토큰 실행42347875298은 zone 조회200 및 GraphQL authorization 거부를 기록했다.
 
 첫 새 이미지 실행42349325217은 GHCR/AR 준비와 보호 origin200 뒤 revision describe 오류 분류에서 실패했다. 실제 서비스는 없었고 Home 배포는 skip했다. 실패 Discord는 POST/GET confirmed(message1568521162345021492)지만 성공 알림은 아니다. SDK592의 부재 응답을 정확한 명령·리소스 이름으로 분류하는 회귀를 추가하고 권한 오류·다른 리소스·추가 오류 문구는 계속 거부한다. 수정 코드의 실제 읽기 결과와 재배포 결과를 구분한다.
+
+Source42350926001은 Cloud Run 생성과 비공개3쌍200을 통과했지만 Home의 archive config 검증에서 실패했다. SSH check·일반 명령 거부·GHCR pull 성공, release/runtime tag 부재와 기존263558 정상 응답을 각각 확인했다. Docker29.2.1의 export에는 config/layer blob이 없었으나 중지 상태 임시 컨테이너의 실제 JAR 해시는 CI와 일치했다. Registry Raw와 실제 Home inspect를 새 순수 함수로 대조해 config digest 일치를 확인했고, Home CLI의 인증된 Registry 조회·새 앱 활성화는 후속 Actions 검증 대상이다. 전체127개(Workers32 Node23 Python72)와 타입·린트·번들을 통과했다. 이전 baseline의 imageConfigDigest 표기는 실제 측정한 opaque Docker ID를 뜻했으므로 dockerImageId로 정정했다.

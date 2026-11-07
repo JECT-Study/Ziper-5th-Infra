@@ -1,0 +1,10 @@
+{
+  "runtimeChanged": false,
+  "tagCreated": true,
+  "identityFailure": "Invalid image metadata member",
+  "saveExitCode": 0,
+  "hasManifest": true,
+  "manifestEntries": 1,
+  "configs": [],
+  "diagnosticErrorClass": "KeyError"
+}
