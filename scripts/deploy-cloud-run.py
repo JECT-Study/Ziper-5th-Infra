@@ -35,6 +35,17 @@ class Refused(ValueError):
     pass
 
 
+def sdk_run_resource_absent(args, stderr):
+    """SDK592's describe translates a missing Run object into an ArgumentError."""
+    if len(args) < 5 or args[0:2] != ['gcloud', 'run'] or args[3] != 'describe':
+        return False
+    kind = {'services': 'service', 'revisions': 'revision'}.get(args[2])
+    if kind is None:
+        return False
+    expected = f'ERROR: (gcloud.run.{args[2]}.describe) Cannot find {kind} [{args[4]}]'
+    return (stderr or '').strip() == expected
+
+
 def cli(args, *, env=None, data=None, missing=False, timeout=900, run=subprocess.run):
     """Keep raw CLI output private, including errors from application startup."""
     try:
@@ -43,12 +54,12 @@ def cli(args, *, env=None, data=None, missing=False, timeout=900, run=subprocess
         raise Refused('command_failed_or_outcome_unknown') from None
     if result.returncode:
         stderr = result.stderr.decode(errors='replace') if isinstance(result.stderr, bytes) else result.stderr
-        if missing and re.search(r'\bNOT_FOUND\b', stderr or ''):
-            return None
         family = 'gcloud' if args[0] == 'gcloud' else 'docker'
         operation = '_'.join(args[1:4] if family == 'gcloud' else args[1:2])
         codes = ('PERMISSION_DENIED', 'UNAUTHENTICATED', 'NOT_FOUND', 'INVALID_ARGUMENT', 'RESOURCE_EXHAUSTED', 'ALREADY_EXISTS', 'FAILED_PRECONDITION')
-        code = next((value for value in codes if value in (stderr or '')), 'outcome_unknown')
+        code = next((value for value in codes if re.search(r'\b' + value + r'\b', stderr or '')), 'outcome_unknown')
+        if missing and (code == 'NOT_FOUND' or code == 'outcome_unknown' and sdk_run_resource_absent(args, stderr)):
+            return None
         raise Refused(family + '_' + operation + '_' + code)
     return result.stdout.decode() if isinstance(result.stdout, bytes) else result.stdout
 

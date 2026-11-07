@@ -148,3 +148,5 @@ Server 실행 [42250905425](https://github.com/JECT-Study/Ziper-5th-Server/actio
 독립 검토에서 비공개 Cloud Run 검사 CLI의 sys import 누락을 재현했다. 함수 fixture가 실제 CLI 진입을 실행하지 않아 놓친 문제로, help와 자격 누락의 실제 subprocess 실행을 회귀 검사에 추가했다. Discord GET의 본문 전송 중 연결 오류도 읽기 재시도에 포함하며 잘못된 JSON은 즉시 거부한다. 실제 운영 검증을 대체하지 않는다.
 
 후속 쌍 배포 증거 보완의 로컬 전체 검사는 Workers32·Node23·Python65, 총120개와 타입·린트·번들을 통과했다. actionlint도 통과했다. 이 결과에는 실제 Cloud Run 생성·홈 이미지 교체·성공 Discord가 포함되지 않는다. 새 읽기 전용 실행42347844427은 자격 일치와403 challenge, 전용 토큰 실행42347875298은 zone 조회200 및 GraphQL authorization 거부를 기록했다.
+
+첫 새 이미지 실행42349325217은 GHCR/AR 준비와 보호 origin200 뒤 revision describe 오류 분류에서 실패했다. 실제 서비스는 없었고 Home 배포는 skip했다. 실패 Discord는 POST/GET confirmed(message1568521162345021492)지만 성공 알림은 아니다. SDK592의 부재 응답을 정확한 명령·리소스 이름으로 분류하는 회귀를 추가하고 권한 오류·다른 리소스·추가 오류 문구는 계속 거부한다. 수정 코드의 실제 읽기 결과와 재배포 결과를 구분한다.

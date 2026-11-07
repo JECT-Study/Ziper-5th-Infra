@@ -1,0 +1,16 @@
+{
+  "runUrl": "https://github.com/JECT-Study/Ziper-5th-Server/actions/runs/42349325217",
+  "sourceSha": "bba59ca31f7427c61ba88fb334f154fb454adf10",
+  "infraSha": "a5841b607365402349eebdea70c30543e73e7bb6",
+  "attempt": 1,
+  "result": "failure",
+  "stage": "Cloud Run revision describe before create",
+  "reason": "gcloud_run_revisions_describe_outcome_unknown",
+  "registryPublished": true,
+  "artifactMirrorPrepared": true,
+  "runtimeDeployIssued": false,
+  "homeDeploySkipped": true,
+  "failureDiscordConfirmed": true,
+  "successDiscordConfirmed": false,
+  "scope": "Failed attempt retained; neither initial paired deployment nor repetition success."
+}
