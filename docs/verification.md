@@ -152,3 +152,7 @@ Server 실행 [42250905425](https://github.com/JECT-Study/Ziper-5th-Server/actio
 첫 새 이미지 실행42349325217은 GHCR/AR 준비와 보호 origin200 뒤 revision describe 오류 분류에서 실패했다. 실제 서비스는 없었고 Home 배포는 skip했다. 실패 Discord는 POST/GET confirmed(message1568521162345021492)지만 성공 알림은 아니다. SDK592의 부재 응답을 정확한 명령·리소스 이름으로 분류하는 회귀를 추가하고 권한 오류·다른 리소스·추가 오류 문구는 계속 거부한다. 수정 코드의 실제 읽기 결과와 재배포 결과를 구분한다.
 
 Source42350926001은 Cloud Run 생성과 비공개3쌍200을 통과했지만 Home의 archive config 검증에서 실패했다. SSH check·일반 명령 거부·GHCR pull 성공, release/runtime tag 부재와 기존263558 정상 응답을 각각 확인했다. Docker29.2.1의 export에는 config/layer blob이 없었으나 중지 상태 임시 컨테이너의 실제 JAR 해시는 CI와 일치했다. Registry Raw와 실제 Home inspect를 새 순수 함수로 대조해 config digest 일치를 확인했고, Home CLI의 인증된 Registry 조회·새 앱 활성화는 후속 Actions 검증 대상이다. 전체127개(Workers32 Node23 Python72)와 타입·린트·번들을 통과했다. 이전 baseline의 imageConfigDigest 표기는 실제 측정한 opaque Docker ID를 뜻했으므로 dockerImageId로 정정했다.
+
+### 2026-11-07 Cloud Run 볼륨 갱신 실패
+
+[42355650907](https://github.com/JECT-Study/Ziper-5th-Server/actions/runs/42355650907)은 새 d62b160 revision의 실제 Ready·traffic100 뒤 구성 검사에서 실패했다. 이미지·환경·리소스·startup probe는 맞았지만 SDK592의 `--set-secrets`가 미사용 이전 볼륨2개를 남겨 총4개였다. Home 배포는 skip했고 이를 쌍 배포 성공으로 계산하지 않는다. 기존 회귀에 새 revision의 볼륨 교체가 한 번의 mutation에 포함되는 조건을 추가했다. 수정 전 `--clear-volumes` 부재로 실패하고 두 clear 옵션 추가 후28개가 통과했다. 실제 새 배포와 동일 revision 반복은 후속 운영 증거에서 판정한다.

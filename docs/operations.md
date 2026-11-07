@@ -158,3 +158,9 @@ Discord는 wait=true POST 한 번, 같은 메시지 GET으로 채널·내용·ID
 Cloud SDK592의 run services/revisions describe는 없는 객체에 NOT_FOUND 대신 `ERROR: (gcloud.run.<kind>.describe) Cannot find <kind> [<요청 이름>]`을 반환할 수 있다. missing 조회에서 요청 명령·이름까지 정확히 일치한 형식만 부재로 허용한다. 권한·인증 오류를 먼저 분류하며 추가 문구·다른 리소스·불명확한 결과는 계속 실패한다. 이는 읽기 경계의 최초 생성 판단이며 배포 쓰기 재시도를 허용하지 않는다.
 
 홈 pull의 config 검증은 [ADR0014](adr/0014-registry-manifest-identity-on-home.md)의 Registry Raw manifest 해시·엔진 객체 연결·실제 JAR 해시를 사용한다. Docker29 containerd export가 누락한 config를 검증 없이 통과시키지 않는다. CI 게시 전 archive 검증은 유지한다. 홈 수신기 receive.py와 image_identity.py를 검토된 동일 Infra SHA에서 설치하고 caller 두 pin도 갱신한 뒤 실행한다. 실제 Registry 조회에는 기존 일회성 pull 자격만 사용하고 원본 응답과 자격은 기록하지 않는다.
+
+### Cloud Run Secret 볼륨 교체
+
+새 source revision의 단일 `gcloud run deploy` 명령은 `--clear-volume-mounts --clear-volumes`와 기존 `--set-secrets`를 함께 전달한다. SDK592는 `--set-secrets` 갱신 시 이전 마운트만 지우고 사용하지 않는 볼륨을 남겼다. 전체 볼륨을 정리한 뒤 필요한 두 Secret 파일을 같은 요청의 최종 구성으로 만든다. 빈 Secret 상태를 별도 배포하지 않는다. 기존 revision의 정확한 두 볼륨·마운트·Secret 버전1 검사는 유지하며, 같은 source 재실행은 검증된 revision을 읽고 재사용한다. 범위는 전용 `ziper-backup` 단일 컨테이너이며 기존 다른 볼륨을 보존하는 일반 배포 도구가 아니다.
+
+설정의 두 목록 제거는 [공식 문서](https://docs.cloud.google.com/run/docs/configuring/services/cloud-storage-volume-mounts)의 옵션을 사용한다. SDK592의 구성 변경 순서는 마운트 제거 → 볼륨 제거 → Secret 추가이며, 실제 재현과 새 runtime 통과는 PR 실행 증거로 구분한다.
