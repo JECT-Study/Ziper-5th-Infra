@@ -1,8 +1,8 @@
 {
-  "checkedAt": "2026-11-06T23:23:02.069210+00:00",
+  "checkedAt": "2026-11-07T12:52:44.413138+00:00",
   "productionE2eComplete": false,
-  "sourceMain": "03f60eeb6206da1b4cd0aa9f05f75f03510e485a",
-  "infraRuntimePin": "bcc852e5884bbb0d22f8fd651984441faafcd734",
+  "sourceMain": "e3eb3538f1a3cf18f1de80e3b56b738ebb41a774",
+  "infraRuntimePin": "4a0e5b1d71c7107a6b8200d1fe6ab02547041135",
   "sourceMainCiSuccessful": true,
   "existingHomeRelease": "263558f6f2cf97ad717f71335c95c49214ae908c",
   "existingHomePublicHealth": {
@@ -11,19 +11,32 @@
     "scope": "Existing release; no Worker routing",
     "latestReceipt": "home-public-health-after-policy.json"
   },
-  "newHomeRegistryDeploymentPerformed": false,
-  "cloudRunServicePresent": false,
+  "newHomeRegistryDeploymentPerformed": true,
+  "cloudRunServicePresent": true,
   "workerDeploymentPerformedByThisRun": false,
   "faultInjectionPerformed": false,
   "failoverWithin600Seconds": null,
   "halfOpenAndRecoveryOperationallyVerified": false,
-  "fullDeploymentIdempotenceVerified": false,
+  "fullDeploymentIdempotenceVerified": true,
   "deferredDiscordAcknowledgementsVerified": true,
-  "pairedDeploymentSuccessDiscordVerified": false,
+  "pairedDeploymentSuccessDiscordVerified": true,
   "sentryZiperUptimeRegistered": false,
   "recoveryTimerActive": true,
   "unresolvedRecoveryLease": false,
-  "blocker": {
+  "blocker": null,
+  "tests": {
+    "latestLocalTotal": 139,
+    "workers": 32,
+    "node": 23,
+    "python": 84,
+    "runtimePinCiTotal": 128,
+    "nestedDockerRestartProofSeparate": true,
+    "runtimePinCiRunId": 42372626175
+  },
+  "scope": "Paired Home/Cloud Run deployment and same-run repeat verified. Full production Worker/fault E2E remains incomplete. API receipts are field-selected snapshots; individual files retain observation timestamps.",
+  "existingHomeRestartPolicyMigration": "Applied to2 recorded containers; repeated application changed0; same IDs/startTimes/referencedFiles; next whole boot unverified",
+  "existingHomeRestartPolicy": "always",
+  "historicalBlocker": {
     "category": "cloudflare_challenge",
     "httpStatus": 403,
     "credentialsMatchReference": true,
@@ -31,15 +44,18 @@
     "exactProviderRuleIdentified": false,
     "requires": "Cloudflare administrative session or dedicated Account Analytics Read plus Zone Read credential; existing worker credential was denied security-event authorization"
   },
-  "tests": {
-    "latestLocalTotal": 106,
-    "workers": 32,
-    "node": 10,
-    "python": 64,
-    "runtimePinCiTotal": 99,
-    "nestedDockerRestartProofSeparate": true
-  },
-  "scope": "Receipts refer to observations at their individual timestamps. CI and preparation are not production deployment or fault E2E.",
-  "existingHomeRestartPolicyMigration": "Applied to2 recorded containers; repeated application changed0; same IDs/startTimes/referencedFiles; next whole boot unverified",
-  "existingHomeRestartPolicy": "always"
+  "currentHomeRelease": "e3eb3538f1a3cf18f1de80e3b56b738ebb41a774",
+  "pairedDeploymentComplete": true,
+  "pairedDeploymentRunId": "42373294683",
+  "pairedDeploymentAttempts": [
+    1,
+    2
+  ],
+  "remainingUnverified": [
+    "Worker deployment and real origin authentication/routing",
+    "Unique minute health samples and actual app fault injection",
+    "Failover within 600 seconds and HALF_OPEN/CLOSED recovery",
+    "Next whole-home scheduled shutdown and boot",
+    "Sentry permanent Uptime and member-login access checks"
+  ]
 }

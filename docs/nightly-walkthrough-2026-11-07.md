@@ -1,5 +1,17 @@
 # 2026-11-07 nightly walkthrough
 
+## 21:53 KST 후속 판정 — 쌍 배포·반복 성공
+
+[실행 42373294683](https://github.com/JECT-Study/Ziper-5th-Server/actions/runs/42373294683)의 시도1(21:37–21:44)·시도2(21:46–21:51)는 publish·backup·deploy·notify 네 job이 모두 성공했다. Source `e3eb3538f1a3cf18f1de80e3b56b738ebb41a774`, Infra pin `4a0e5b1d71c7107a6b8200d1fe6ab02547041135`를 유지했다. [최초 증거 대조](evidence/2026-11-07/resumed-paired/first-verified.json)와 [재실행 대조](evidence/2026-11-07/resumed-paired/repeat-verified.json)는 같은 이미지 config·manifest·JAR와 서로 다른 Discord 성공 메시지를 확인한다. API 자료는 필요한 필드만 선별한 시도별 snapshot이다.
+
+실제 Home의 JAR 해시는 CI와 일치하고 재실행 전후 두 컨테이너 ID·StartedAt가 같았다. 둘 다 running·always이며 복구 lease는 없다. [Home 재조회](evidence/2026-11-07/resumed-home-after-repeat.json), [Cloud Run 재조회](evidence/2026-11-07/resumed-cloud-run-after-repeat.json)에서 새 revision Ready·traffic100·정확한 구성·두 Secret 볼륨/마운트를 확인했다. revision 생성 시각은 재실행보다 앞선다. [익명 호출](evidence/2026-11-07/resumed-cloud-run-anonymous.json)은 두 probe 모두403이다. [비용 설정 재조회](evidence/2026-11-07/resumed-spend-cap.json)는 Cloud Run 월 KRW1,000 CONFIGURED이며 절대 비용 상한 증명이 아니다.
+
+직전 차단은 Infra #20의 부재 응답 분류, #21의 Docker export 누락, #22의 이전 Secret 볼륨 잔존으로 순차 수정했다. 17:39 codex2는 사용량 제한으로 중단됐으며 21:27부터 별도 프로필에서 재개했다. Infra #22·Server #41·develop 동기화 #42를 CI 성공 후 병합했다. Server 로컬 사전 검사의 Python3.9 socket/인수 없는 TimeoutError 오류도 ETIMEDOUT 코드로 수정해 시간 제한과 재시도 분류를 유지했다.
+
+현재 [상태 파일](evidence/2026-11-07/e2e-status.json)의 `pairedDeploymentComplete=true`, `productionE2eComplete=false`다. 이번 완료 범위는 두 origin 배포·readiness·동일 릴리스 재실행·Discord 메시지 저장/조회다. Worker 배포·실제 장애 주입·600초 전환·HALF_OPEN/CLOSED·다음 전체 장비 부팅은 수행하지 않았다. 아래 본문은 새벽 시점의 관측 이력이며 현재 차단 상태로 읽지 않는다.
+
+## 새벽 관측 이력
+
 [기계 판독 상태](evidence/2026-11-07/e2e-status.json)의 운영 E2E는 **미완료**다. 기존 홈 릴리스는 정상 응답하지만 GitHub Actions가 보호 origin에 접근하면 Cloudflare의 브라우저 challenge가 반환되어 쌍 배포가 사전 조건에서 중단된다. 새 Cloud Run runtime과 Worker를 배포하거나 장애를 주입하지 않았다. 기존 홈 두 컨테이너의 재기동 정책은 이미지 교체 없이 always로 실제 정합했고 반복 no-op과 공개 health를 확인했다. 로컬 검사·이미지 준비 성공을 운영 배포 성공으로 계산하지 않는다.
 
 이 문서·ADR·배포 구현·정제한 증거의 소유 위치는 **Ziper-5th-Infra**다. Server에는 앱·응답 계약·고정 SHA의 수동 workflow 진입점만 둔다. 원래 Server 작업 디렉터리의 사용자 수정은 보존하고 별도 worktree에서 작업했다. 실행별 최종 판정은 [Infra PR #1](https://github.com/JECT-Study/Ziper-5th-Infra/pull/1)에 연결한다.

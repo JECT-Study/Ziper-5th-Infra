@@ -1,0 +1,14 @@
+{
+  "ready": "True",
+  "latestReadyRevisionName": "ziper-backup-sd62b160109986743f9c949a5c3761fb95a700af6",
+  "latestCreatedRevisionName": "ziper-backup-sd62b160109986743f9c949a5c3761fb95a700af6",
+  "traffic": [
+    {
+      "latestRevision": true,
+      "percent": 100,
+      "revisionName": "ziper-backup-sd62b160109986743f9c949a5c3761fb95a700af6"
+    }
+  ],
+  "volumeCount": 4,
+  "image": "asia-southeast1-docker.pkg.dev/ziper-production/ziper-releases/ziper-server@sha256:f8f514df284abec9219b66bed52abc2bbc41ee43b06960da47bfc4b8f99496bb"
+}

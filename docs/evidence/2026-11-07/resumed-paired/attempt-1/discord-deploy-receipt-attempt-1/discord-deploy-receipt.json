@@ -1,0 +1,17 @@
+{
+  "checkedAt": "2026-11-07T12:44:44.422Z",
+  "DEPLOY_RESULT": "success",
+  "DEPLOY_SCOPE": "paired",
+  "SOURCE_SHA": "e3eb3538f1a3cf18f1de80e3b56b738ebb41a774",
+  "GITHUB_RUN_ID": "42373294683",
+  "GITHUB_RUN_ATTEMPT": "1",
+  "phase": "complete",
+  "delivery": {
+    "state": "confirmed",
+    "messageId": "1568607133845430345",
+    "channelId": "1566809692779323402",
+    "readAttempts": 1
+  },
+  "readAttempts": 1,
+  "readStatus": 200
+}

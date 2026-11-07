@@ -5,7 +5,8 @@
 - [x] 실제 실패 지점과 확정/가설 구분, GHCR digest pull 경로·오류 분기 작성·로컬 검증
 - [x] GCP spend cap 재조회 → 최소 권한·비밀 구성 → GHCR/AR 동일 이미지 준비
 - [x] Infra·Server CI와 사용자 승인 bypass 병합 → main 수동 준비 반복 성공
-- [ ] 06시 이후 별도 수동 runtime 배포와 실제 두 origin readiness
+- [x] 06시 이후 별도 수동 runtime 배포와 실제 두 origin readiness — 21:37 실행42373294683 시도1·2 성공
+- [x] 동일 실행·릴리스 전체 재실행, 같은 이미지·revision과 별도의 Discord 성공 메시지 두 건 대조
 - [ ] Worker 배포 → 1분 alarm·10분 표본·직접 origin 인증 검증
 - [x] 아홉 trusted control 파일 해시 일치와 독립 timer의 무해한 tick·lease 해소 확인
 - [ ] 집어 앱 장애 → 600초 내 Cloud Run 전환

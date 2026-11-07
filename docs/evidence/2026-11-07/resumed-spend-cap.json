@@ -1,0 +1,23 @@
+{
+  "checkedAt": "2026-11-07T12:32:04.990504+00:00",
+  "spendCap": {
+    "outputState": "CONFIGURED"
+  },
+  "amount": {
+    "specifiedAmount": {
+      "currencyCode": "KRW",
+      "units": "1000"
+    }
+  },
+  "budgetFilter": {
+    "projects": [
+      "projects/45190721178"
+    ],
+    "services": [
+      "services/152E-C115-5142"
+    ],
+    "creditTypesTreatment": "EXCLUDE_ALL_CREDITS",
+    "calendarPeriod": "MONTH"
+  },
+  "limitation": "Cloud Run only; enforcement delay and other service costs are outside this check."
+}

@@ -1,0 +1,21 @@
+{
+  "id": 42373294683,
+  "run_attempt": 1,
+  "event": "workflow_dispatch",
+  "head_branch": "main",
+  "head_sha": "e3eb3538f1a3cf18f1de80e3b56b738ebb41a774",
+  "conclusion": "success",
+  "status": "completed",
+  "path": ".github/workflows/deploy-production.yml",
+  "referenced_workflows": [
+    {
+      "path": "JECT-Study/Ziper-5th-Infra/.github/workflows/deploy-home.yml@4a0e5b1d71c7107a6b8200d1fe6ab02547041135",
+      "sha": "4a0e5b1d71c7107a6b8200d1fe6ab02547041135"
+    }
+  ],
+  "created_at": "2026-11-07T12:37:11Z",
+  "run_started_at": "2026-11-07T12:37:11Z",
+  "updated_at": "2026-11-07T12:44:48Z",
+  "html_url": "https://github.com/JECT-Study/Ziper-5th-Server/actions/runs/42373294683",
+  "sourceApi": "https://api.github.com/repos/JECT-Study/Ziper-5th-Server/actions/runs/42373294683/attempts/1"
+}
