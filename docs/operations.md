@@ -71,7 +71,7 @@ deploy job은 packages:read의 별도 job 토큰, 작은 metadata JSON과 고정
 
 홈을 복구한 뒤 쿨다운·HALF_OPEN 3회 정상·CLOSED·윈도우 초기화를 확인한다. HALF_OPEN 중 한 번 실패하면 OPEN으로 돌아오는지도 확인한다. 이후 Cloud Run cold start·IAM 오류·양쪽 DB 장애·무료 한도·Cloudflare 장애를 별도 시나리오로 검토한다. 운영 장애 주입과 비용이 발생하는 백업 활성화는 준비된 환경과 합의한 실행 범위에서 진행한다.
 
-롤백은 배포 버전과 현재 SQLite schema 호환성을 확인한 뒤 이전 Worker 버전을 선택한다. 현재 v1 스키마를 읽을 수 없는 이전 버전으로 무조건 되돌리지 않는다. namespace나 migrations를 삭제해 복구하지 않는다. DNS 우회는 회로와 origin 접근 경계를 바꾸는 별도 운영 결정이다.
+롤백은 배포 버전과 현재 SQLite schema 호환성을 확인한 뒤 이전 Worker 버전을 선택한다. 현재 v1 스키마를 읽을 수 없는 이전 버전으로 무조건 되돌리지 않는다. namespace나 migrations를 삭제해 복구하지 않는다. DNS 우회는 회로와 origin 접근 경계를 바꾸는 별도 운영 결정이다. 공개 Worker가 잘못 동작하면 `Remove edge route manually`(`scripts/remove-edge-route.py`)로 공개 호스트의 `ziper-edge` route만 떼어 내 기존 DNS origin(홈 Tunnel)으로 되돌린다. 기본 실행은 일치 개수만 보고하고 `apply`를 켜야 삭제한다. 다른 host·script의 route, Worker 스크립트와 DO는 지우지 않는다.
 
 ## 알려진 도구 제한
 
