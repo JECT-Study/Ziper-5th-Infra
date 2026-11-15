@@ -48,6 +48,23 @@ describe("Worker and SQLite Durable Object", () => {
     expect(outbound).toHaveBeenCalledTimes(1);
   });
 
+  it("Access세션쿠키는_공개응답과_upstream요청에서제거하고_앱쿠키는보존한다", async () => {
+    await seed(initialState(Date.now()));
+    outbound.mockImplementationOnce(input => {
+      const request = new Request(input);
+      expect(request.headers.get("Cookie")).toBe("app=1");
+      const headers = new Headers();
+      headers.append("Set-Cookie", "CF_Authorization=access-session; Path=/; Secure");
+      headers.append("Set-Cookie", "app=2; Path=/; HttpOnly");
+      return Promise.resolve(new Response("ok", { headers }));
+    });
+    const response = await exports.default.fetch("https://api.example.test/readyz", {
+      headers: { Cookie: "CF_Authorization=replayed; app=1; cf_appsession=x" }
+    });
+    expect(response.headers.getSetCookie()).toEqual(["app=2; Path=/; HttpOnly"]);
+    expect(response.headers.get("Set-Cookie") ?? "").not.toContain("access-session");
+  });
+
   it("OPEN이나HALFOPEN이면_사용자통신을_홈서버에보내지않는다", async () => {
     for (const mode of [{ kind: "OPEN", retryAt: Date.now() + 120_000 }, { kind: "HALF_OPEN", successes: 1 }] satisfies CircuitState["mode"][]) {
       await seed({ ...initialState(Date.now()), mode });
