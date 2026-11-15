@@ -9,6 +9,14 @@ function unavailable(): Response {
   });
 }
 
+const isAccessCookie = (cookie: string): boolean => cookie.trimStart().toUpperCase().startsWith("CF_");
+
+function stripAccessCookies(headers: Headers): void {
+  const kept = (headers.get("Cookie") ?? "").split(";").map((part) => part.trim()).filter((part) => part && !isAccessCookie(part));
+  if (kept.length) headers.set("Cookie", kept.join("; "));
+  else headers.delete("Cookie");
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     try {
@@ -33,6 +41,7 @@ export default {
       destination.search = incoming.search;
       const headers = new Headers(request.headers);
       for (const name of ["Host", "CF-Access-Client-Id", "CF-Access-Client-Secret", "CF-Access-Jwt-Assertion", "X-Serverless-Authorization", "Forwarded", "X-Forwarded-Host", "X-Forwarded-Proto", "X-Forwarded-For"]) headers.delete(name);
+      stripAccessCookies(headers);
       headers.set("X-Forwarded-Host", incoming.host);
       headers.set("X-Forwarded-Proto", "https");
       if (decision.target === "home") homeHeaders(env).forEach((value, name) => headers.set(name, value));
@@ -44,6 +53,11 @@ export default {
       const result = new Response(response.body, response);
       result.headers.set("Cache-Control", "no-store");
       for (const name of ["CF-Access-Client-Id", "CF-Access-Client-Secret", "CF-Access-Jwt-Assertion", "X-Serverless-Authorization"]) result.headers.delete(name);
+      // Access issues a CF_Authorization session for the protected origin; relaying it would let any
+      // public caller reuse the Worker's service-token session against that origin.
+      const cookies = result.headers.getSetCookie();
+      result.headers.delete("Set-Cookie");
+      for (const cookie of cookies) if (!isAccessCookie(cookie)) result.headers.append("Set-Cookie", cookie);
       return result;
     } catch {
       console.error(JSON.stringify({ event: "edge_request_unavailable" }));
