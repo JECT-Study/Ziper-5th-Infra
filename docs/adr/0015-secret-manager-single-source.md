@@ -2,7 +2,7 @@
 
 - 상태: 채택 — 실제 운영 배포의 활성화는 실행별 증거로 확인
 - 날짜: 2026-11-15
-- 관계: ADR0008의 "비밀 로컬 파일" 공급 방식을 대체한다. Cloud Run의 Secret 파일 마운트와 전용 runtime SA 경계는 유지한다. Server ADR 0006의 홈 호스트 환경 파일 기준도 함께 대체한다.
+- 관계: ADR0008의 "비밀 로컬 파일" 공급 방식을 대체한다. 홈 마운트 방식은 [ADR 0016](0016-home-runtime-named-volumes.md)이 보완한다. Cloud Run의 Secret 파일 마운트와 전용 runtime SA 경계는 유지한다. Server ADR 0006의 홈 호스트 환경 파일 기준도 함께 대체한다.
 
 ## 배경
 
@@ -17,7 +17,7 @@ Secret Manager의 고정 버전을 홈과 Cloud Run이 함께 읽는 단일 원�
 - Secret은 `ziper-runtime-properties`, `ziper-db-ca`, `ziper-home-migration-properties` 세 개다. 마이그레이션 계정은 홈만 사용하므로 별도 Secret으로 분리한다. Cloud Run runtime SA는 이 Secret을 읽을 수 없다.
 - 버전은 `config/production.json`의 `secretVersions`에 고정한다. `latest`를 읽지 않는다. 두 origin은 같은 번호를 읽으며, 값을 교체하려면 새 버전을 추가하고 이 번호를 PR로 올린 뒤 쌍 배포한다.
 - 홈은 GCP 자격 증명을 갖지 않는다. deploy job이 전용 `ziper-config-reader` SA로 WIF 인증하고, 고정 버전을 runner 임시 디렉터리(0600)에 읽은 뒤 기존 제한 SSH 수신기 페이로드로 전달한다. 이 SA에는 세 Secret의 `secretAccessor`만 부여하고 deployer SA 권한은 늘리지 않는다.
-- 수신기는 이미지 검증이 끝난 뒤 `deploy.lock` 아래에서 설정 묶음을 `/opt/ziper/private/config/<묶음 ID>/`에 쓴다. 묶음 ID는 고정 버전과 파일별 SHA256에서 계산한다. 같은 ID의 디렉터리는 바꾸지 않으며, 내용이 다르면 거부한다. 디렉터리는 root 전용이고 파일은 0444다. 컨테이너는 파일만 마운트하므로 비root 앱 사용자가 읽을 수 있다.
+- 수신기는 이미지 검증이 끝난 뒤 `deploy.lock` 아래에서 설정 묶음을 `/opt/ziper/private/config/<묶음 ID>/`에 쓴다. 묶음 ID는 고정 버전과 파일별 SHA256에서 계산한다. 같은 ID의 디렉터리는 바꾸지 않으며, 내용이 다르면 거부한다. 디렉터리는 root 전용이고 파일은 0444다. 컨테이너가 이 디렉터리를 직접 bind하던 방식은 예약 부팅 후 자동 재시작에 실패해 [ADR 0016](0016-home-runtime-named-volumes.md)에서 대체되었다. 현재는 이 디렉터리를 원본으로 두고 검증한 Docker named volume을 마운트하며, 파일 모드 0444로 비root 앱 사용자가 읽는다.
 - `deploy.sh`는 `current-config`에 묶음 ID를 `current-version`과 함께 기록한다. 활성화가 실패하면 이전 release와 이전 묶음으로 함께 되돌린다. 운영자의 수동 재배포는 기록된 묶음을 다시 사용한다.
 - 홈 compose는 `env_file`을 쓰지 않고 Cloud Run과 같이 `SPRING_CONFIG_IMPORT`로 properties 파일을 읽는다. 마이그레이션 properties는 두 번째 파일로 함께 가져온다.
 - `bootstrap-gcp-production.py`는 기본적으로 노트북 파일을 읽지 않는다. 최초 이관에만 `--import-runtime-env`를 명시한다.
