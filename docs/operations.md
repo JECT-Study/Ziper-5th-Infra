@@ -167,12 +167,16 @@ Cloud SDK592의 run services/revisions describe는 없는 객체에 NOT_FOUND �
 
 ### 운영 비밀 교체와 최초 이관
 
-운영 비밀의 원본은 Secret Manager다. 값을 바꿀 때는 다음 순서를 따른다.
+운영 비밀의 원본은 Secret Manager다. 각 Secret은 properties 파일 하나를 한 버전으로 저장하므로 키 추가·변경·제거는 모두 새 버전을 올리는 작업이다. `MIGRATION_*`는 `ziper-home-migration-properties`, 나머지 앱 설정은 `ziper-runtime-properties`, DB CA는 `ziper-db-ca`에 둔다. 값을 바꿀 때는 다음 순서를 따른다.
 
-1. 해당 Secret에 새 버전을 추가한다. 값은 셸 인자나 로그에 넣지 않고 `--data-file`로 전달한다.
-2. `config/production.json`의 `secretVersions` 번호를 PR로 올리고 main CI를 통과시킨다.
-3. 홈 `/opt/ziper/ci`의 production.json을 `install-home-control.py`로 같은 SHA에서 갱신한다. Server caller의 두 Infra pin도 같은 SHA로 올린다.
-4. 쌍 배포를 실행하고 양쪽 readiness와 receiver-control-proof의 묶음 ID를 확인한 뒤 이전 버전을 비활성화한다.
+1. 고정된 현재 버전을 `gcloud secrets versions access <버전> --out-file`로 umask 077 임시 파일에 받고 편집한다. 값은 출력하지 않는다.
+2. `gcloud secrets versions add <Secret> --data-file=<파일>`로 새 버전을 올리고 임시 파일을 지운다. 값은 셸 인자나 로그에 넣지 않는다.
+3. `config/production.json`의 `secretVersions` 번호를 PR로 올리고 main CI를 통과시킨다.
+4. Server caller의 `uses`와 `infra_sha`를 같은 Infra main SHA로 올린다. 버전 번호는 이 SHA의 checkout에서 CI만 읽으므로 홈 제어 파일 재설치는 필요하지 않다. 홈 수신기는 버전 형식만 검사한다.
+5. 쌍 배포를 실행하고 양쪽 readiness와 receiver-control-proof의 `secretVersions`·묶음 ID를 확인한다.
+6. 확인 후 이전 버전을 `disable`한다. 롤백 가능성이 없을 때만 `destroy`한다. 고정된 버전이 비활성이면 deploy job이 값을 받지 못해 배포 전에 중단된다.
+
+키를 추가할 때는 값을 먼저 반영한 뒤 그 키를 참조하는 앱을 배포하고, 제거할 때는 참조를 없앤 앱을 먼저 배포한 뒤 값을 뺀다. 기본값 없는 placeholder가 풀리지 않으면 앱 기동이 실패하기 때문이다. 새 Secret 자체를 추가하는 것은 `CONFIG_SECRETS`·bootstrap 접근 권한·compose·Cloud Run 마운트를 함께 바꾸는 코드 변경이다. `--import-runtime-env`는 최초 이관 전용이며 교체에 쓰지 않는다.
 
 최초 이관 순서: Infra 병합 → `bootstrap-gcp-production.py --import-runtime-env`로 `ziper-home-migration-properties`·`ziper-config-reader`·WIF 연결 생성 → 출력 버전과 `secretVersions` 대조 → 홈 제어 파일 설치와 Server pin 갱신을 같은 배포 창에서 수행 → 쌍 배포. 새 수신기는 설정 묶음이 없는 이전 workflow 페이로드를 거부한다.
 
