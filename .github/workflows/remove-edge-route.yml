@@ -1,0 +1,37 @@
+name: Remove edge route manually
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: Delete the ziper-edge route of the public host (false only reports the match)
+        type: boolean
+        default: false
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: production-edge
+  cancel-in-progress: false
+jobs:
+  remove:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    environment: production
+    timeout-minutes: 5
+    steps:
+      - name: Require successful CI for this exact main commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          count=$(gh api --method GET "repos/$GITHUB_REPOSITORY/actions/workflows/ci.yml/runs" -f head_sha="$GITHUB_SHA" -f branch=main -f event=push -f status=success --jq '.workflow_runs | length')
+          test "$count" -gt 0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: Detach only the ziper-edge route so the public host falls back to its DNS origin
+        run: python3 scripts/remove-edge-route.py ${{ inputs.apply && '--apply' || '' }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ZONE_NAME: ${{ vars.CLOUDFLARE_ZONE_NAME }}
+          PUBLIC_ORIGIN: ${{ vars.PUBLIC_ORIGIN }}
