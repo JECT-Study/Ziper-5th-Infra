@@ -6,7 +6,7 @@ services:
     restart: always
     environment:
       SPRING_PROFILES_ACTIVE: prod
-      SPRING_CONFIG_IMPORT: file:/run/ziper-config/application.properties,file:/run/ziper-config/migration.properties
+      SPRING_CONFIG_IMPORT: file:/run/ziper/application.properties,file:/run/ziper/migration.properties
       APP_RUNTIME_MODE: server
       SWAGGER_ENABLED: 'false'
       PORT: '8080'
@@ -18,9 +18,7 @@ services:
     ports:
       - '127.0.0.1:${ZIPER_HTTP_PORT:-18081}:8080'
     volumes:
-      - ${ZIPER_CONFIG_DIR:?Supply the pinned configuration bundle}/application.properties:/run/ziper-config/application.properties:ro
-      - ${ZIPER_CONFIG_DIR}/migration.properties:/run/ziper-config/migration.properties:ro
-      - ${ZIPER_CONFIG_DIR}/db-ca.pem:/run/ziper/db-ca.pem:ro
+      - ziper-config:/run/ziper:ro
     read_only: true
     tmpfs:
       - /tmp:size=134217728,mode=1777
@@ -39,7 +37,7 @@ services:
     command: [tunnel, --no-autoupdate, run, --token-file, /run/secrets/tunnel-token]
     restart: always
     volumes:
-      - ${ZIPER_PRIVATE_DIR}/cloudflared-token:/run/secrets/tunnel-token:ro
+      - ziper-tunnel:/run/secrets:ro
     read_only: true
     cap_drop: [ALL]
     security_opt: [no-new-privileges:true]
@@ -50,3 +48,10 @@ services:
       options:
         max-size: '10m'
         max-file: '3'
+volumes:
+  ziper-config:
+    external: true
+    name: ${ZIPER_CONFIG_VOLUME:?Supply the pinned configuration volume}
+  ziper-tunnel:
+    external: true
+    name: ${ZIPER_TUNNEL_VOLUME:?Supply the tunnel token volume}

@@ -54,6 +54,11 @@ unset COMPOSE_FILE COMPOSE_PROJECT_NAME COMPOSE_PROFILES
 unset ZIPER_IMAGE ZIPER_VERSION ZIPER_PRIVATE_DIR ZIPER_CONFIG_DIR SENTRY_RELEASE
 export ZIPER_PRIVATE_DIR="$root/private"
 export ZIPER_CONFIG_DIR="$root/private/config/$config"
+# Docker Desktop re-creates WSL bind sources only after the distro proxy starts, so a boot-time
+# restart of a WSL file bind fails. Named volumes live in the Docker VM and survive that restart.
+export ZIPER_CONFIG_VOLUME="ziper-config-$config"
+tunnel_hash=$(sha256sum < "$root/private/cloudflared-token" | cut -c1-24)
+export ZIPER_TUNNEL_VOLUME="ziper-tunnel-$tunnel_hash"
 export DOCKER_CONFIG="$root/docker-client"
 test -s "$DOCKER_CONFIG/config.json"
 
@@ -79,6 +84,42 @@ select_release() {
     [[ "$expected" =~ ^sha256:[0-9a-f]{64}$ ]] && [ "$actual" = "$expected" ] || return 1
     export ZIPER_IMAGE="ziper-server:$selected" ZIPER_VERSION="$selected"
     selected_compose="$root/releases/$selected/compose.yml"
+}
+
+# A volume is a derived copy of an immutable host source and is checked byte for byte.
+volume_matches() {
+    local name=$1 source=$2 helper copy status
+    copy=$(mktemp -d)
+    helper=$(docker create --network none --entrypoint true -v "$name:/source:ro" "$ZIPER_IMAGE") || { rm -rf "$copy"; return 1; }
+    status=0
+    docker cp "$helper:/source/." "$copy/" >/dev/null || status=1
+    docker rm "$helper" >/dev/null || status=1
+    [ "$status" -eq 0 ] && diff -r -q "$source" "$copy" >/dev/null || status=1
+    rm -rf "$copy"
+    return "$status"
+}
+ensure_volume() {
+    local name=$1 source=$2 helper
+    if docker volume inspect "$name" >/dev/null 2>&1; then
+        volume_matches "$name" "$source" && return 0
+        # Only an unused volume is replaced; Docker refuses removal while a container references it.
+        docker volume rm "$name" >/dev/null || { echo "Runtime volume differs and is in use: $name" >&2; return 1; }
+    fi
+    docker volume create --label ziper.managed=true "$name" >/dev/null || return 1
+    if helper=$(docker create --network none --entrypoint true -v "$name:/target" "$ZIPER_IMAGE"); then
+        docker cp "$source/." "$helper:/target" >/dev/null && docker rm "$helper" >/dev/null && volume_matches "$name" "$source" && return 0
+        docker rm "$helper" >/dev/null 2>&1 || true
+    fi
+    docker volume rm "$name" >/dev/null 2>&1 || true
+    echo "Runtime volume could not be populated: $name" >&2
+    return 1
+}
+tunnel_source=$(mktemp -d)
+trap 'rm -rf "$tunnel_source"' EXIT
+cp "$root/private/cloudflared-token" "$tunnel_source/tunnel-token"
+chmod 0444 "$tunnel_source/tunnel-token"
+runtime_volumes() {
+    ensure_volume "$ZIPER_CONFIG_VOLUME" "$ZIPER_CONFIG_DIR" && ensure_volume "$ZIPER_TUNNEL_VOLUME" "$tunnel_source"
 }
 
 compose() { docker compose -p ziper-production -f "$selected_compose" "$@"; }
@@ -112,7 +153,7 @@ restore_config_record() {
         rm -f "$root/current-config"
     fi
 }
-if compose up -d --no-build --pull never app && ready && runtime_window && compose up -d --no-build cloudflared && commit_release; then
+if runtime_volumes && compose up -d --no-build --pull never app && ready && runtime_window && compose up -d --no-build cloudflared && commit_release; then
     printf 'Ziper release %s is ready; verify the public endpoint separately.\n' "$version"
     exit 0
 fi
@@ -121,10 +162,10 @@ echo 'Ziper deployment failed app readiness or tunnel startup' >&2
 # The release record may have failed after the configuration record moved.
 restore_config_record || echo 'The configuration record could not be restored' >&2
 if [ -n "$previous_config" ]; then
-    export ZIPER_CONFIG_DIR="$root/private/config/$previous_config"
+    export ZIPER_CONFIG_DIR="$root/private/config/$previous_config" ZIPER_CONFIG_VOLUME="ziper-config-$previous_config"
 fi
 if [ -n "$previous" ]; then
-    if select_release "$previous" && compose up -d --no-build --pull never app && ready && compose up -d --no-build cloudflared; then
+    if select_release "$previous" && runtime_volumes && compose up -d --no-build --pull never app && ready && compose up -d --no-build cloudflared; then
         echo 'The preceding Ziper release was restored' >&2
     else
         echo 'The preceding release did not recover; operator action is required' >&2

@@ -1,0 +1,18 @@
+{
+  "checkedAt": "2026-11-15T12:41:24.779810+00:00",
+  "scope": "Restricted SSH control, pinned configuration and registry pull",
+  "checks": {
+    "check": true,
+    "generalCommandDenied": true,
+    "configStored": true,
+    "registryDeploy": true
+  },
+  "configId": "2fef3963545cacf22c6d54f53b7f0e7f1148f5bf19fffd02d7b9ce2339aaddc5",
+  "secretVersions": {
+    "ziper-runtime-properties": "1",
+    "ziper-home-migration-properties": "1",
+    "ziper-db-ca": "1"
+  },
+  "result": "passed",
+  "payloadBytes": 3941
+}

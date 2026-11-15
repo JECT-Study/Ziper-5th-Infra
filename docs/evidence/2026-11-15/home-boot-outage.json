@@ -1,0 +1,35 @@
+{
+  "checkedAt": "2026-11-15T12:20:00Z",
+  "window": {
+    "lastHealthyStart": "2026-11-07T12:43:19Z",
+    "gracefulStop": "2026-11-07T18:00:10Z",
+    "restoredManuallyApprox": "2026-11-15T12:19Z"
+  },
+  "containers": {
+    "ziper-production-app-1": "Exited (127)",
+    "ziper-production-cloudflared-1": "Exited (127)",
+    "restartPolicy": "always",
+    "restartCount": 0
+  },
+  "stateError": "error mounting \"/run/desktop/mnt/host/wsl/docker-desktop-bind-mounts/Ubuntu/<hash>\" to rootfs at \"/run/ziper/db-ca.pem\": not a directory",
+  "bootsKst": [
+    "11-08 06:02",
+    "11-09 06:02",
+    "11-10 06:02",
+    "11-11 06:04",
+    "11-12 06:02",
+    "11-13 06:01",
+    "11-14 06:01",
+    "11-15 06:02"
+  ],
+  "dockerDesktopProxyRemountUtc": [
+    "2026-11-13T21:02:13Z",
+    "2026-11-14T21:02:50Z"
+  ],
+  "unaffected": "tocktock, nginx and n8n bind Windows paths (C:\\...) and restarted at every boot",
+  "manualRecovery": "docker start from the Ubuntu distro succeeded immediately; readyz 200 release e3eb353",
+  "inference": "the daemon restart ran before the WSL distro proxy recreated the bind source; daemon logs rotated so the attempt time itself was not observed",
+  "notChecked": [
+    "Sentry alert delivery during the outage"
+  ]
+}

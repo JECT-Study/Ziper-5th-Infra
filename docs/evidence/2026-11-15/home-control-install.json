@@ -1,0 +1,61 @@
+{
+  "checkedAt": "2026-11-15T12:19:31.251879+00:00",
+  "infraSha": "647291d12725113fa068ff00753bd9066135d1fe",
+  "installed": true,
+  "files": [
+    {
+      "source": "deployment/home/receive.py",
+      "target": "/opt/ziper/ci/receive.py",
+      "sha256": "8a7074554fa4bc2e2b110d3367ebe25562a7bd688586b48904a9840bb6627584",
+      "bytes": 7519
+    },
+    {
+      "source": "deployment/home/image_identity.py",
+      "target": "/opt/ziper/ci/image_identity.py",
+      "sha256": "f2819f6abf2a547eec74f7e79d050efd7ba6ce8d33da3862bd36ed7716d8d624",
+      "bytes": 6564
+    },
+    {
+      "source": "deployment/home/registry_release.py",
+      "target": "/opt/ziper/ci/registry_release.py",
+      "sha256": "179ab8adcc8cf8d04b3835f85055fe6ea20207d030a1611b53e3ef32f2310286",
+      "bytes": 5678
+    },
+    {
+      "source": "deployment/home/deploy.sh",
+      "target": "/opt/ziper/ci/deploy.sh",
+      "sha256": "d29af6f545434a469ec6a6fe08815c6c8ffd0364186be264b719942a7b2fbe0e",
+      "bytes": 5103
+    },
+    {
+      "source": "deployment/home/compose.yml",
+      "target": "/opt/ziper/ci/compose.yml",
+      "sha256": "70a1191b9f86b9c74bfa19ba6dab9ce1080b1d8ae51dee121372ac56d64f7ead",
+      "bytes": 1803
+    },
+    {
+      "source": "config/production.json",
+      "target": "/opt/ziper/ci/production.json",
+      "sha256": "7183cf8d803ec7418374cbdcb28352ad4273d82036189610f7bad7b62457d06c",
+      "bytes": 286
+    },
+    {
+      "source": "deployment/home/recovery.py",
+      "target": "/opt/ziper/ops/recovery.py",
+      "sha256": "6ff78f861a9a7152288c39d3dc2c3211f9f69206567d4b55cf22381b7048d2e8",
+      "bytes": 9156
+    },
+    {
+      "source": "deployment/home/systemd/ziper-recovery.service",
+      "target": "/etc/systemd/system/ziper-recovery.service",
+      "sha256": "d5ccaf65a1dac95529e159bc0d1ea3b3b827b071f1fe7227cb22b6f71817ea1e",
+      "bytes": 252
+    },
+    {
+      "source": "deployment/home/systemd/ziper-recovery.timer",
+      "target": "/etc/systemd/system/ziper-recovery.timer",
+      "sha256": "784993c5d4a1cfb4a51be71d5e6f6eb6fb43c4a5e684f1db5c624565abc7c462",
+      "bytes": 189
+    }
+  ]
+}

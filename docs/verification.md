@@ -169,3 +169,9 @@ Source42350926001은 Cloud Run 생성과 비공개3쌍200을 통과했지만 Hom
 [최초 대조](evidence/2026-11-07/resumed-paired/first-verified.json)·[반복 대조](evidence/2026-11-07/resumed-paired/repeat-verified.json), [Home 재조회](evidence/2026-11-07/resumed-home-after-repeat.json), [GCP 재조회](evidence/2026-11-07/resumed-cloud-run-after-repeat.json)에 실제 증거가 있다. run/jobs/artifacts JSON은 GitHub API에서 필요한 필드만 선별한 snapshot이며 원격 자료의 출처를 ID로 재조회할 수 있다. 증거 검사기의 회귀11개는 실제 성공 snapshot과 변조본으로 다른 run/attempt, 오래된 Home·공개 응답, 다른 registry, 전달 증거 누락, Discord 조회 실패와 첫 메시지 재사용을 거부했다.
 
 Worker 배포·분 단위 표본·실제 장애 주입·600초 failover·HALF_OPEN/CLOSED·다음 전체 장비 부팅은 미실행이다. 현재 쌍 배포 성공과 전체 운영 장애 E2E의 미완료를 [상태 파일](evidence/2026-11-07/e2e-status.json)에서 분리한다.
+
+## 2026-11-15 Secret Manager 단일 원본 활성화와 홈 부팅 장애 조사
+
+Infra #24(647291d)와 Server #58(566ef72)을 병합하고 GCP 부트스트랩 이관, 홈 제어 파일 9개 설치 후 [Server 실행 43714629616](https://github.com/JECT-Study/Ziper-5th-Server/actions/runs/43714629616)으로 쌍 배포했다. 시도 1·2 모두 네 job이 성공했다. receiver 증거([시도1](evidence/2026-11-15/receiver-control-proof-attempt-1.json), [시도2](evidence/2026-11-15/receiver-control-proof-attempt-2.json))의 묶음 ID와 고정 버전이 같고, 재실행은 같은 묶음을 재사용하며 app을 재생성하지 않았다. 독립 조회([readback](evidence/2026-11-15/secret-source-readback.json))로 홈 파일 해시와 Secret Manager v1 일치, 마이그레이션 Secret의 Cloud Run 미마운트, Secret 접근 주체, 로그 2,146줄의 비밀값 부재를 확인했다. 운영 롤백 경로는 단위 테스트로만 확인했다.
+
+배포 전 홈 origin은 11-08 06:02 부팅부터 `Exited (127)`였다. WSL bind source 부재로 daemon 자동 재시작이 실패했고 배포판 안의 `docker start`로 복구했다([조사](evidence/2026-11-15/home-boot-outage.json)). 대응은 [ADR 0016](adr/0016-home-runtime-named-volumes.md)이며 실제 다음 예약 부팅 후 재기동은 아직 검증하지 않았다. 장애 기간 Sentry 알림 수신 여부는 확인하지 않았다.
