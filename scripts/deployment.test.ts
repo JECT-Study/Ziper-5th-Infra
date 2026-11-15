@@ -106,7 +106,7 @@ await test("배포설정경계_경로와비밀파일을검사하고_잘못된설
     assert.deepEqual(config.routes, [{ pattern: "api.example.test/*", zone_name: "example.test" }]);
     assert.equal(config.vars.BACKUP_ENABLED, "false");
     // Wrangler joins a tsconfig override onto the generated config directory, so none is emitted.
-    assert.equal(config.tsconfig, undefined);
+    assert.ok(!("tsconfig" in config));
     assert.ok(!raw.includes("fixture-secret"));
     assert.equal(statSync(join(directory, "ziper-worker-secrets.json")).mode & 0o777, 0o600);
     for (const override of [
