@@ -201,6 +201,7 @@ jobs:
       contents: read
       actions: read
       packages: read
+      id-token: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -232,10 +233,28 @@ jobs:
       - name: Recheck schedule before home runtime mutation
         id: window
         run: node scripts/deployment-window.ts
+      - name: Inspect non-secret OIDC trust claims
+        if: steps.window.outputs.deferred != 'true'
+        run: python3 scripts/inspect-oidc-claims.py
+      - name: Authenticate pinned configuration reader
+        if: steps.window.outputs.deferred != 'true'
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3
+        with:
+          project_id: ziper-production
+          workload_identity_provider: projects/45190721178/locations/global/workloadIdentityPools/ziper-github/providers/ziper-server
+          service_account: ziper-config-reader@ziper-production.iam.gserviceaccount.com
+      - if: steps.window.outputs.deferred != 'true'
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3
+        with:
+          version: '592.0.0'
+      - name: Fetch pinned home configuration from Secret Manager
+        if: steps.window.outputs.deferred != 'true'
+        run: python3 scripts/fetch-home-config.py "$RUNNER_TEMP/ziper-home-config"
       - name: Pull immutable GHCR release through restricted SSH receiver
         id: delivery
         if: steps.window.outputs.deferred != 'true'
         env:
+          ZIPER_HOME_CONFIG_DIR: ${{ runner.temp }}/ziper-home-config
           CI_KEY: ${{ secrets.ZIPER_CI_SSH_KEY }}
           TUNNEL_SERVICE_TOKEN_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
           TUNNEL_SERVICE_TOKEN_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
@@ -262,8 +281,8 @@ jobs:
           --expected-release "${{ github.sha }}" --expected-origin home
           --output dist/public-health.json
       - if: always()
-        name: Remove temporary SSH credentials
-        run: rm -f "$RUNNER_TEMP/ziper-key" "$RUNNER_TEMP/ziper-known-hosts"
+        name: Remove temporary SSH credentials and configuration
+        run: rm -rf "$RUNNER_TEMP/ziper-key" "$RUNNER_TEMP/ziper-known-hosts" "$RUNNER_TEMP/ziper-home-config"
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         if: always()
         with:

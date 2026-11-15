@@ -5,5 +5,10 @@
     "end": "06:00",
     "deploySafetyMinutes": 30
   },
-  "monthlyBudgetUsd": 1
+  "monthlyBudgetUsd": 1,
+  "secretVersions": {
+    "ziper-runtime-properties": "1",
+    "ziper-home-migration-properties": "1",
+    "ziper-db-ca": "1"
+  }
 }

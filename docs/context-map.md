@@ -37,3 +37,5 @@
 - [0013 무료 Bot Fight Mode와 자동 상태 검사](adr/0013-free-bot-fight-mode-and-machine-probes.md)
 
 - [0014 홈 이미지의 Registry manifest 식별과 Docker export 의존 제거](adr/0014-registry-manifest-identity-on-home.md)
+
+- [0015 Secret Manager 고정 버전을 두 운영 origin의 단일 원본으로 사용](adr/0015-secret-manager-single-source.md) — 0008의 비밀 로컬 파일 공급을 대체

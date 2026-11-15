@@ -9,8 +9,6 @@ release="$root/releases/$version"
 test -d "$release"
 test -s "$release/compose.yml"
 test -s "$release/image-id"
-test -s "$root/private/runtime.env"
-test -s "$root/private/db-ca.pem"
 test -s "$root/private/cloudflared-token"
 
 if [ -n "${ZIPER_DEPLOY_LOCK_FD:-}" ]; then
@@ -36,9 +34,26 @@ if [ -e "$root/ops/recovery-lease.json" ] || [ -L "$root/ops/recovery-lease.json
     echo 'A Ziper recovery lease must be resolved before deployment' >&2
     exit 1
 fi
+
+# The receiver passes the bundle it just stored; a manual redeploy reuses the recorded one.
+config_valid() {
+    [[ "$1" =~ ^[0-9a-f]{64}$ ]] || return 1
+    local name
+    for name in application.properties migration.properties db-ca.pem; do
+        test -s "$root/private/config/$1/$name" || return 1
+    done
+}
+previous_config=''
+if [ -f "$root/current-config" ]; then
+    previous_config=$(cat "$root/current-config")
+    config_valid "$previous_config" || { echo 'Invalid recorded configuration bundle' >&2; exit 1; }
+fi
+config=${ZIPER_CONFIG_ID:-$previous_config}
+config_valid "$config" || { echo 'A stored configuration bundle is required' >&2; exit 2; }
 unset COMPOSE_FILE COMPOSE_PROJECT_NAME COMPOSE_PROFILES
-unset ZIPER_IMAGE ZIPER_VERSION ZIPER_PRIVATE_DIR SENTRY_RELEASE
+unset ZIPER_IMAGE ZIPER_VERSION ZIPER_PRIVATE_DIR ZIPER_CONFIG_DIR SENTRY_RELEASE
 export ZIPER_PRIVATE_DIR="$root/private"
+export ZIPER_CONFIG_DIR="$root/private/config/$config"
 export DOCKER_CONFIG="$root/docker-client"
 test -s "$DOCKER_CONFIG/config.json"
 
@@ -87,7 +102,15 @@ fi
 select_release "$version"
 compose config --quiet
 commit_release() {
-    printf '%s\n' "$version" > "$root/current-version.next" && mv "$root/current-version.next" "$root/current-version"
+    printf '%s\n' "$config" > "$root/current-config.next" && mv "$root/current-config.next" "$root/current-config" \
+        && printf '%s\n' "$version" > "$root/current-version.next" && mv "$root/current-version.next" "$root/current-version"
+}
+restore_config_record() {
+    if [ -n "$previous_config" ]; then
+        printf '%s\n' "$previous_config" > "$root/current-config.next" && mv "$root/current-config.next" "$root/current-config"
+    else
+        rm -f "$root/current-config"
+    fi
 }
 if compose up -d --no-build --pull never app && ready && runtime_window && compose up -d --no-build cloudflared && commit_release; then
     printf 'Ziper release %s is ready; verify the public endpoint separately.\n' "$version"
@@ -95,6 +118,11 @@ if compose up -d --no-build --pull never app && ready && runtime_window && compo
 fi
 
 echo 'Ziper deployment failed app readiness or tunnel startup' >&2
+# The release record may have failed after the configuration record moved.
+restore_config_record || echo 'The configuration record could not be restored' >&2
+if [ -n "$previous_config" ]; then
+    export ZIPER_CONFIG_DIR="$root/private/config/$previous_config"
+fi
 if [ -n "$previous" ]; then
     if select_release "$previous" && compose up -d --no-build --pull never app && ready && compose up -d --no-build cloudflared; then
         echo 'The preceding Ziper release was restored' >&2

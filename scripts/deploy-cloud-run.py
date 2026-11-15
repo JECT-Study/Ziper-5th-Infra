@@ -16,7 +16,7 @@ from zoneinfo import ZoneInfo
 HOME = Path(__file__).resolve().parents[1] / 'deployment/home'
 sys.path.insert(0, str(HOME))
 from image_identity import loaded_image_config_digest
-from registry_release import DIGEST, validate_manifest
+from registry_release import DIGEST, secret_versions, validate_manifest
 
 PROJECT = 'ziper-production'
 REGION = 'asia-southeast1'
@@ -254,10 +254,22 @@ def is_ready(resource):
         and condition.get('type') == 'Ready' and condition.get('status') == 'True' for condition in conditions)
 
 
+def pinned_secret_versions():
+    """Cloud Run mounts the same pinned versions that home receives; it never reads the migrator secret."""
+    return secret_versions(json_value(SCHEDULE.read_text()))
+
+
+def secret_flag():
+    versions = pinned_secret_versions()
+    return ('--set-secrets=/run/ziper-config/application.properties=ziper-runtime-properties:'
+            + versions['ziper-runtime-properties'] + ',/run/ziper/db-ca.pem=ziper-db-ca:' + versions['ziper-db-ca'])
+
+
 def secret_mounts_match(resource, spec, container):
     """Resolve Cloud Run v1 volume names and optional same-project secret aliases."""
     expected = {'/run/ziper-config': ('ziper-runtime-properties', 'application.properties'),
                 '/run/ziper': ('ziper-db-ca', 'db-ca.pem')}
+    versions = pinned_secret_versions()
     annotations = resource['metadata'].get('annotations', {})
     raw_aliases = annotations.get('run.googleapis.com/secrets', '')
     if not isinstance(raw_aliases, str):
@@ -311,7 +323,7 @@ def secret_mounts_match(resource, spec, container):
         if not isinstance(items, list) or len(items) != 1 or not isinstance(items[0], dict):
             return False
         item = items[0]
-        if (not set(item) <= {'key', 'path', 'mode'} or item.get('key') != '1'
+        if (not set(item) <= {'key', 'path', 'mode'} or item.get('key') != versions[expected[path][0]]
                 or item.get('path') != expected[path][1] or type(item.get('mode', 0)) is not int
                 or item.get('mode', 0) not in (0, 0o444)):
             return False
@@ -425,7 +437,7 @@ def deploy(release, output_path):
                '--startup-probe=httpGet.path=/readyz,httpGet.port=8080,timeoutSeconds=3,periodSeconds=5,failureThreshold=30',
                '--set-env-vars=' + env,
                '--clear-volume-mounts', '--clear-volumes',
-               '--set-secrets=/run/ziper-config/application.properties=ziper-runtime-properties:1,/run/ziper/db-ca.pem=ziper-db-ca:1',
+               secret_flag(),
                '--labels=service=ziper,source-sha=' + release['sourceSha'])
         resource = resource_value(gcloud('run', 'services', 'describe', SERVICE, '--region', REGION))
         revision_data = resource_value(gcloud('run', 'revisions', 'describe', revision, '--region', REGION))

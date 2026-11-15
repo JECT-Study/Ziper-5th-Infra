@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import re
 import secrets
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -25,17 +26,41 @@ def deployment_lock(root):
 
 
 def deploy_registry(version, source, root=Path('/opt/ziper')):
-    manifest, username, token = read_payload(source, version)
+    manifest, username, token, config = read_payload(source, version)
     ensure_runtime_window(root)
     with deployment_lock(root) as lock_fd:
         ensure_runtime_window(root)
         lease = root / 'ops' / 'recovery-lease.json'
         if lease.exists() or lease.is_symlink():
             raise SystemExit('A Ziper recovery lease must be resolved before deployment')
-        deploy_registry_locked(version, manifest, username, token, root, lock_fd)
+        deploy_registry_locked(version, manifest, username, token, root, lock_fd, config)
 
 
-def deploy_registry_locked(version, manifest, username, token, root, lock_fd):
+def store_config(root, config_id, files):
+    """Keep each pinned bundle immutable; existing containers keep mounting their own directory."""
+    base = root / 'private' / 'config'
+    base.mkdir(mode=0o700, exist_ok=True)
+    target = base / config_id
+    if target.exists() or target.is_symlink():
+        if (target.is_symlink() or not target.is_dir() or set(os.listdir(target)) != set(files)
+                or any((target / name).read_bytes() != data for name, data in files.items())):
+            raise SystemExit('Immutable configuration bundle mismatch')
+        return
+    stage = Path(tempfile.mkdtemp(prefix='.incoming-', dir=base))
+    try:
+        for name, data in files.items():
+            path = stage / name
+            path.write_bytes(data)
+            # The parent stays root-only; mounted files must be readable by the non-root app user.
+            path.chmod(0o444)
+        os.rename(stage, target)
+    except BaseException:
+        shutil.rmtree(stage, ignore_errors=True)
+        raise
+
+
+def deploy_registry_locked(version, manifest, username, token, root, lock_fd, config):
+    config_id, _, config_files = config
     trusted = root / 'ci'
     release = root / 'releases' / version
     metadata = (json.dumps(manifest, sort_keys=True) + '\n').encode()
@@ -96,9 +121,11 @@ def deploy_registry_locked(version, manifest, username, token, root, lock_fd):
             print('ZIPER_IMAGE_CONFIG_DIGEST=' + manifest['imageConfigDigest'], flush=True)
         finally:
             subprocess.run(['docker', 'image', 'rm', verification_tag], env=env, capture_output=True)
+    store_config(root, config_id, config_files)
+    print('ZIPER_CONFIG_ID=' + config_id, flush=True)
     # Credentials are gone. Share the same open lock description with trusted deploy.sh.
     env = dict(os.environ, DOCKER_CONFIG=str(root / 'docker-client'), ZIPER_DEPLOY_ROOT=str(root),
-               ZIPER_DEPLOY_LOCK_FD=str(lock_fd))
+               ZIPER_DEPLOY_LOCK_FD=str(lock_fd), ZIPER_CONFIG_ID=config_id)
     env.pop('GITHUB_TOKEN', None)
     env.pop('GHCR_TOKEN', None)
     result = subprocess.run(['bash', str(trusted / 'deploy.sh'), version], env=env, pass_fds=(lock_fd,))
