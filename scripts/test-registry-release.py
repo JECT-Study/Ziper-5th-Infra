@@ -104,12 +104,12 @@ class Fixture:
         (trusted / 'production.json').write_text(json.dumps({'homeSchedule': schedule}))
         docker = self.binary / 'docker'
         docker.write_text('''#!/usr/bin/env python3
-import fcntl,hashlib,io,json,os,pathlib,sys,tarfile
+import fcntl,hashlib,io,json,os,pathlib,shutil,sys,tarfile
 +r=pathlib.Path(os.environ['FIXTURE_ROOT']);a=sys.argv[1:]
 +with (r/'deploy.lock').open('a+b') as lock:
 + try:fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB);held=False
 + except BlockingIOError:held=True
-+with (r/'commands').open('a') as f:f.write(json.dumps({'args':a,'lockHeld':held,'configDir':os.environ.get('ZIPER_CONFIG_DIR')})+'\\n')
++with (r/'commands').open('a') as f:f.write(json.dumps({'args':a,'lockHeld':held,'configDir':os.environ.get('ZIPER_CONFIG_DIR'),'configVolume':os.environ.get('ZIPER_CONFIG_VOLUME'),'tunnelVolume':os.environ.get('ZIPER_TUNNEL_VOLUME')})+'\\n')
 +tags=json.loads((r/'tags.json').read_text())
 +registry=json.loads((r/'registry-verbose.json').read_text());new_id=registry['Descriptor']['digest']
 +if a[0]=='login':
@@ -124,7 +124,16 @@ import fcntl,hashlib,io,json,os,pathlib,sys,tarfile
 +  for n,b in [('manifest.json',m),(h+'.json',c)]:
 +   if (r/'broken-export').exists() and n!='manifest.json':continue
 +   x=tarfile.TarInfo(n);x.size=len(b);t.addfile(x,io.BytesIO(b))
-+elif a[0]=='create':print('fixture-container')
++elif a[:2]==['volume','inspect']:sys.exit(0 if (r/'volumes'/a[-1]).is_dir() else 1)
++elif a[:2]==['volume','create']:(r/'volumes'/a[-1]).mkdir(parents=True)
++elif a[:2]==['volume','rm']:
++ if a[-1] in (r/'volumes-in-use').read_text().split() if (r/'volumes-in-use').exists() else []:sys.exit(1)
++ shutil.rmtree(r/'volumes'/a[-1])
++elif a[0]=='create':print('volume='+a[a.index('-v')+1].split(':')[0] if '-v' in a else 'fixture-container')
++elif a[0]=='cp' and a[1].startswith('volume='):shutil.copytree(r/'volumes'/a[1][7:].split(':')[0],a[2],dirs_exist_ok=True)
++elif a[0]=='cp' and a[2].startswith('volume='):
++ if (r/'fail-volume-copy').exists() and (r/'fail-volume-copy').read_text() in a[2]:sys.exit(1)
++ shutil.copytree(a[1].rstrip('.'),r/'volumes'/a[2][7:].split(':')[0],dirs_exist_ok=True)
 +elif a[0]=='cp':pathlib.Path(a[-1]).write_bytes((r/'fixture.jar').read_bytes())
 +elif a[:2]==['image','inspect']:
 + if '--format' in a:print(tags.get(a[-1],new_id))
@@ -487,10 +496,14 @@ else:sys.stdin.read();print('ZIPER_DEPLOY_DEFERRED');sys.exit(75)
             receiver.deploy_registry(VERSION, io.BytesIO(payload()), f.root)
         self.assertEqual((f.root / 'current-version').read_text().strip(), PREVIOUS)
         self.assertEqual((f.root / 'current-config').read_text().strip(), previous.name)
-        app_starts = [(Path(call['args'][call['args'].index('-f') + 1]).parent.name, Path(call['configDir']).name)
+        app_starts = [(Path(call['args'][call['args'].index('-f') + 1]).parent.name, Path(call['configDir']).name,
+                       call['configVolume'])
                       for call in f.calls() if call['args'][0] == 'compose' and call['args'][-1] == 'app'
                       and 'up' in call['args']]
-        self.assertEqual(app_starts, [(VERSION, config_id()), (PREVIOUS, previous.name)])
+        self.assertEqual(app_starts, [(VERSION, config_id(), 'ziper-config-' + config_id()),
+                                      (PREVIOUS, previous.name, 'ziper-config-' + previous.name)])
+        self.assertEqual(self.volume(f, 'ziper-config-' + previous.name)['application.properties'],
+                         b'DB_PASSWORD=previous\n')
 
     def test_release_record_failure_after_config_record_restores_previous_configuration(self):
         f = self.fixture()
@@ -518,6 +531,68 @@ else:sys.stdin.read();print('ZIPER_DEPLOY_DEFERRED');sys.exit(75)
         result = subprocess.run(['bash', str(HOME / 'deploy.sh'), VERSION], env=f.env, capture_output=True, timeout=30)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertTrue(all(call['configDir'] == str(stored) for call in f.calls() if call['args'][0] == 'compose'))
+
+    def volume(self, f, name):
+        path = f.root / 'volumes' / name
+        return {item.name: item.read_bytes() for item in path.iterdir()} if path.is_dir() else None
+
+    def tunnel_volume(self):
+        return 'ziper-tunnel-' + hashlib.sha256(b'fixture').hexdigest()[:24]
+
+    def test_runtime_files_are_copied_into_named_volumes_not_wsl_binds(self):
+        f = self.fixture()
+        with patch.dict(os.environ, f.env, clear=True):
+            receiver.deploy_registry(VERSION, io.BytesIO(payload()), f.root)
+        self.assertEqual(self.volume(f, 'ziper-config-' + config_id()), CONFIG_FILES)
+        self.assertEqual(self.volume(f, self.tunnel_volume()), {'tunnel-token': b'fixture'})
+        composes = [call for call in f.calls() if call['args'][0] == 'compose']
+        self.assertTrue(composes)
+        self.assertTrue(all(call['configVolume'] == 'ziper-config-' + config_id()
+                            and call['tunnelVolume'] == self.tunnel_volume() for call in composes))
+
+    def test_unused_stale_volume_is_rebuilt_from_the_immutable_bundle(self):
+        f = self.fixture()
+        stale = f.root / 'volumes' / ('ziper-config-' + config_id())
+        stale.mkdir(parents=True)
+        (stale / 'db-ca.pem').write_bytes(b'stale')
+        with patch.dict(os.environ, f.env, clear=True):
+            receiver.deploy_registry(VERSION, io.BytesIO(payload()), f.root)
+        self.assertEqual(self.volume(f, 'ziper-config-' + config_id()), CONFIG_FILES)
+
+    def test_mismatched_volume_in_use_is_never_replaced_or_started(self):
+        f = self.fixture()
+        name = 'ziper-config-' + config_id()
+        stale = f.root / 'volumes' / name
+        stale.mkdir(parents=True)
+        (stale / 'db-ca.pem').write_bytes(b'stale')
+        (f.root / 'volumes-in-use').write_text(name)
+        with patch.dict(os.environ, f.env, clear=True), self.assertRaises(SystemExit):
+            receiver.deploy_registry(VERSION, io.BytesIO(payload()), f.root)
+        self.assertEqual(self.volume(f, name), {'db-ca.pem': b'stale'})
+        self.assertFalse(any(call['args'][0] == 'compose' and 'up' in call['args'] for call in f.calls()))
+        self.assertFalse((f.root / 'current-version').exists())
+
+    def test_failed_volume_copy_leaves_no_partial_volume_and_restores_previous(self):
+        f = self.fixture()
+        f.release(PREVIOUS, OLD_ID)
+        previous = f.stored_config({**CONFIG_FILES, 'application.properties': b'DB_PASSWORD=previous\n'})
+        (f.root / 'current-version').write_text(PREVIOUS + '\n')
+        (f.root / 'current-config').write_text(previous.name + '\n')
+        (f.root / 'current-runtime').write_text(PREVIOUS)
+        (f.root / 'fail-volume-copy').write_text(config_id())
+        with patch.dict(os.environ, f.env, clear=True), self.assertRaises(SystemExit):
+            receiver.deploy_registry(VERSION, io.BytesIO(payload()), f.root)
+        self.assertIsNone(self.volume(f, 'ziper-config-' + config_id()))
+        self.assertEqual((f.root / 'current-version').read_text().strip(), PREVIOUS)
+        self.assertEqual((f.root / 'current-config').read_text().strip(), previous.name)
+        self.assertEqual((f.root / 'current-runtime').read_text(), PREVIOUS)
+        self.assertEqual(self.volume(f, 'ziper-config-' + previous.name)['application.properties'],
+                         b'DB_PASSWORD=previous\n')
+        self.assertTrue(any(call['args'][0] == 'compose' and 'up' in call['args'] and call['args'][-1] == 'app'
+                            and call['configVolume'] == 'ziper-config-' + previous.name for call in f.calls()))
+        new_starts = [call for call in f.calls() if call['args'][0] == 'compose' and 'up' in call['args']
+                      and Path(call['args'][call['args'].index('-f') + 1]).parent.name == VERSION]
+        self.assertEqual(new_starts, [])
 
     def test_fetcher_reads_only_pinned_versions_into_private_files(self):
         f = self.fixture()

@@ -178,6 +178,8 @@ Cloud SDK592의 run services/revisions describe는 없는 객체에 NOT_FOUND �
 
 새 방식으로 두 번 이상 성공 배포하기 전에는 홈 `runtime.env`를 지우지 않는다. 이전 release의 compose가 롤백에 이 파일을 쓰기 때문이다. 노트북 원본도 같은 시점 이후에 지운다. 오래된 `/opt/ziper/private/config/` 묶음은 실행 중·롤백 대상 컨테이너가 쓰지 않는 것을 확인한 뒤 수동으로만 정리한다.
 
+홈 app은 설정 묶음을 `ziper-config-<묶음 ID>` volume으로, cloudflared는 토큰을 `ziper-tunnel-<해시>` volume으로 마운트한다([ADR 0016](adr/0016-home-runtime-named-volumes.md)). WSL 경로 bind는 Docker Desktop 재시작 직후 daemon 자동 재시작에 실패한다. `deploy.sh`가 매 배포 volume 내용을 원본과 바이트 단위로 대조하고, 다르면 사용 중이 아닐 때만 다시 만든다. 오래된 volume은 `docker volume ls --filter label=ziper.managed=true`로 확인하고 실행·롤백 대상이 아닌 것만 수동으로 지운다. 예약 부팅 뒤 앱이 `Exited`로 남았다면 Ubuntu 안에서 기록된 두 컨테이너를 `docker start`하고 원인을 `docker inspect`의 `State.Error`로 기록한다.
+
 ### 쌍 배포 증거 대조
 
 `scripts/verify-paired-evidence.py`는 시도별 `run.json`, `jobs.json`, `artifacts.json`과 내려받은 artifact를 대조한다. 같은 main SHA·고정 Infra SHA·run/attempt의 네 job 성공, 전달 증거·이미지·양쪽 health·Discord 조회가 모두 일치해야 통과한다. 최초 성공 뒤 같은 run을 전체 재실행하고 `--compare`에 최초 검증 결과를 넘겨 이미지·revision 유지와 서로 다른 성공 메시지를 확인한다. 제공된 자료의 일관성 검사이며 별도 provider 조회나 Worker 장애·전환 실험을 대신하지 않는다. `test-paired-evidence.py`는 보존한 실제 성공 자료를 복사·변조해 다른 시도의 job, 다른 run의 artifact, 오래된 릴리스·누락된 전달·실패한 Discord 조회를 거부하는지 검사한다.

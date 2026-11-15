@@ -39,3 +39,5 @@
 - [0014 홈 이미지의 Registry manifest 식별과 Docker export 의존 제거](adr/0014-registry-manifest-identity-on-home.md)
 
 - [0015 Secret Manager 고정 버전을 두 운영 origin의 단일 원본으로 사용](adr/0015-secret-manager-single-source.md) — 0008의 비밀 로컬 파일 공급을 대체
+
+- [0016 홈 런타임 파일을 Docker named volume으로 공급](adr/0016-home-runtime-named-volumes.md) — 0009·0011의 부팅 후 재기동 전제를 보완

@@ -1,0 +1,123 @@
+{
+  "checkedAt": "2026-11-15T12:42:35.066389+00:00",
+  "origin": "https://api-ziper.joonamin.dev",
+  "ok": true,
+  "samples": [
+    [
+      {
+        "path": "/livez",
+        "status": 200,
+        "noStore": true,
+        "statusOnly": true,
+        "release": "566ef7275ba5bd359dc6cd4d977102d44139b39e",
+        "upstreamOrigin": "home"
+      },
+      {
+        "path": "/readyz",
+        "status": 200,
+        "noStore": true,
+        "statusOnly": true,
+        "release": "566ef7275ba5bd359dc6cd4d977102d44139b39e",
+        "upstreamOrigin": "home"
+      }
+    ],
+    [
+      {
+        "path": "/livez",
+        "status": 200,
+        "noStore": true,
+        "statusOnly": true,
+        "release": "566ef7275ba5bd359dc6cd4d977102d44139b39e",
+        "upstreamOrigin": "home"
+      },
+      {
+        "path": "/readyz",
+        "status": 200,
+        "noStore": true,
+        "statusOnly": true,
+        "release": "566ef7275ba5bd359dc6cd4d977102d44139b39e",
+        "upstreamOrigin": "home"
+      }
+    ],
+    [
+      {
+        "path": "/livez",
+        "status": 200,
+        "noStore": true,
+        "statusOnly": true,
+        "release": "566ef7275ba5bd359dc6cd4d977102d44139b39e",
+        "upstreamOrigin": "home"
+      },
+      {
+        "path": "/readyz",
+        "status": 200,
+        "noStore": true,
+        "statusOnly": true,
+        "release": "566ef7275ba5bd359dc6cd4d977102d44139b39e",
+        "upstreamOrigin": "home"
+      }
+    ]
+  ],
+  "events": [
+    {
+      "attempt": 1,
+      "path": "/livez",
+      "elapsedSeconds": 0.59,
+      "timeoutSeconds": 10,
+      "status": 200,
+      "retryable": false,
+      "result": "healthy"
+    },
+    {
+      "attempt": 1,
+      "path": "/readyz",
+      "elapsedSeconds": 0.95,
+      "timeoutSeconds": 10,
+      "status": 200,
+      "retryable": false,
+      "result": "healthy"
+    },
+    {
+      "attempt": 2,
+      "path": "/livez",
+      "elapsedSeconds": 11.162,
+      "timeoutSeconds": 10,
+      "status": 200,
+      "retryable": false,
+      "result": "healthy"
+    },
+    {
+      "attempt": 2,
+      "path": "/readyz",
+      "elapsedSeconds": 11.519,
+      "timeoutSeconds": 10,
+      "status": 200,
+      "retryable": false,
+      "result": "healthy"
+    },
+    {
+      "attempt": 3,
+      "path": "/livez",
+      "elapsedSeconds": 21.73,
+      "timeoutSeconds": 10,
+      "status": 200,
+      "retryable": false,
+      "result": "healthy"
+    },
+    {
+      "attempt": 3,
+      "path": "/readyz",
+      "elapsedSeconds": 22.091,
+      "timeoutSeconds": 10,
+      "status": 200,
+      "retryable": false,
+      "result": "healthy"
+    }
+  ],
+  "attempts": 3,
+  "consecutiveSuccesses": 3,
+  "termination": "healthy",
+  "elapsedSeconds": 22.091,
+  "expectedRelease": "566ef7275ba5bd359dc6cd4d977102d44139b39e",
+  "expectedOrigin": "home"
+}
