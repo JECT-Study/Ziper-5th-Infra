@@ -34,7 +34,7 @@ try {
   const directory = resolve(".wrangler/deployment");
   await mkdir(directory, { recursive: true, mode: 0o700 });
   await writeFile(resolve(directory, "wrangler.json"), JSON.stringify({
-    ...template, main: resolve(template.main), tsconfig: resolve("tsconfig.json"),
+    ...template, main: resolve(template.main),
     account_id: env.CLOUDFLARE_ACCOUNT_ID,
     routes: [{ pattern: `${hostname}/*`, zone_name: env.CLOUDFLARE_ZONE_NAME }],
     vars: { SCHEDULE_ENABLED: "true", PUBLIC_ORIGIN: config.publicOrigin, HOME_ORIGIN: config.homeOrigin, BACKUP_ORIGIN: config.backupOrigin ?? "", BACKUP_ENABLED: env.BACKUP_ENABLED }
