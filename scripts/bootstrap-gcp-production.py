@@ -9,6 +9,10 @@ PRIVATE=Path.home()/'.config/ziper/deployment'
 DEPLOY=f'ziper-deployer@{PROJECT}.iam.gserviceaccount.com'
 RUNTIME=f'ziper-runtime@{PROJECT}.iam.gserviceaccount.com'
 INVOKER=f'ziper-edge-invoker@{PROJECT}.iam.gserviceaccount.com'
+CONFIG_READER=f'ziper-config-reader@{PROJECT}.iam.gserviceaccount.com'
+# Secret Manager is the single source; the laptop file is read only with --import-runtime-env.
+SECRET_READERS={'ziper-runtime-properties':(RUNTIME,CONFIG_READER),'ziper-db-ca':(RUNTIME,CONFIG_READER),
+ 'ziper-home-migration-properties':(CONFIG_READER,)}
 OIDC_SUBJECT='repo:JECT-Study@155141962/Ziper-5th-Server@1440603337:environment:production'
 OIDC_LEGACY_SUBJECT='repo:JECT-Study/Ziper-5th-Server:environment:production'
 OIDC_MAPPING={'google.subject':'assertion.sub','attribute.repository_id':'assertion.repository_id','attribute.ref':'assertion.ref'}
@@ -64,13 +68,46 @@ def validate_spend_cap(value):
      or filters.get('calendarPeriod') != 'MONTH'):
   raise SystemExit('Cloud Run spend cap is missing or does not match the production policy')
 
+def properties(values):
+ escape=lambda value:value.replace('\\','\\\\').replace('\n','\\n').replace('\r','\\r')
+ return ''.join(k+'='+escape(v)+'\n' for k,v in values.items()).encode()
+
+def runtime_bundles(text):
+ """Split a one-time imported env file; the Cloud Run runtime never receives migrator credentials."""
+ shared,migration={},{}
+ for line in text.splitlines():
+  if not line or line.startswith('#') or '=' not in line: continue
+  key,value=line.split('=',1)
+  parsed=shlex.split(value)
+  (migration if key.startswith('MIGRATION_') else shared)[key]=parsed[0] if parsed else ''
+ if not shared or not migration: raise SystemExit('Imported runtime file must contain runtime and migration keys')
+ return properties(shared),properties(migration)
+
+def ensure_secret(name, data=None):
+ if run(['secrets','describe',name],missing=True) is None:run(['secrets','create',name,'--replication-policy=automatic'])
+ versions=run(['secrets','versions','list',name,'--filter=state:ENABLED','--sort-by=~createTime']) or []
+ if data is not None:
+  match=False
+  if versions:
+   p=subprocess.run([SDK,'secrets','versions','access','latest','--secret',name,'--project',PROJECT],capture_output=True)
+   match=p.returncode==0 and p.stdout==data
+  if not match:
+   run(['secrets','versions','add',name,'--data-file=-'],data=data)
+   versions=run(['secrets','versions','list',name,'--filter=state:ENABLED','--sort-by=~createTime']) or []
+ if not versions:raise SystemExit('Secret has no enabled version; import it once: '+name)
+ for email in SECRET_READERS[name]:
+  run(['secrets','add-iam-policy-binding',name,'--member=serviceAccount:'+email,'--role=roles/secretmanager.secretAccessor','--condition=None'])
+ # Report only the newest enabled version so config/production.json can pin it.
+ print(json.dumps({'secret':name,'latestEnabledVersion':versions[0]['name'].rsplit('/',1)[-1],'readers':len(SECRET_READERS[name])}),flush=True)
+
 def main():
+ imported='--import-runtime-env' in sys.argv[1:]
  cap=json.loads((PRIVATE/'gcp-spend-cap.json').read_text())
  token=subprocess.check_output([SDK,'auth','print-access-token'],text=True).strip()
  live=json.load(urllib.request.urlopen(urllib.request.Request('https://billingbudgets.googleapis.com/v1/'+cap['name'],headers={'Authorization':'Bearer '+token,'x-goog-user-project':PROJECT})))
  validate_spend_cap(live)
  print('Cloud Run monthly KRW 1000 spend cap: CONFIGURED (not an absolute cost guarantee)',flush=True)
- for n in ['ziper-deployer','ziper-runtime','ziper-edge-invoker']:ensure_sa(n)
+ for n in ['ziper-deployer','ziper-runtime','ziper-edge-invoker','ziper-config-reader']:ensure_sa(n)
  if run(['artifacts','repositories','describe','ziper-releases','--location',REGION],missing=True) is None:
   run(['artifacts','repositories','create','ziper-releases','--location',REGION,'--repository-format=docker','--description=Ziper immutable release images'])
  run(['artifacts','repositories','add-iam-policy-binding','ziper-releases','--location',REGION,'--member=serviceAccount:'+DEPLOY,'--role=roles/artifactregistry.writer','--condition=None'])
@@ -92,33 +129,20 @@ def main():
   run(['iam','workload-identity-pools','create',pool,'--location=global','--display-name=Ziper production Actions'])
  ensure_wif_provider(pool,provider)
  principal=f'principalSet://iam.googleapis.com/projects/{NUMBER}/locations/global/workloadIdentityPools/{pool}/attribute.repository_id/1440603337'
- run(['iam','service-accounts','add-iam-policy-binding',DEPLOY,'--member='+principal,'--role=roles/iam.workloadIdentityUser','--condition=None'])
- values={}
- for line in (PRIVATE/'runtime.env').read_text().splitlines():
-  if not line or line.startswith('#') or '=' not in line: continue
-  key,value=line.split('=',1)
-  if key.startswith('MIGRATION_'): continue
-  parsed=shlex.split(value)
-  values[key]=parsed[0] if parsed else ''
- def prop(value):return value.replace('\\','\\\\').replace('\n','\\n').replace('\r','\\r')
- properties=''.join(k+'='+prop(v)+'\n' for k,v in values.items()).encode()
- for name,data in [('ziper-runtime-properties',properties),('ziper-db-ca',(PRIVATE/'db-ca.pem').read_bytes())]:
-  if run(['secrets','describe',name],missing=True) is None:run(['secrets','create',name,'--replication-policy=automatic'])
-  versions=run(['secrets','versions','list',name,'--filter=state:ENABLED','--sort-by=~createTime']) or []
-  match=False
-  if versions:
-   p=subprocess.run([SDK,'secrets','versions','access','latest','--secret',name,'--project',PROJECT],capture_output=True)
-   match=p.returncode==0 and p.stdout==data
-  if not match:run(['secrets','versions','add',name,'--data-file=-'],data=data)
-  run(['secrets','add-iam-policy-binding',name,'--member=serviceAccount:'+RUNTIME,'--role=roles/secretmanager.secretAccessor','--condition=None'])
-  print(json.dumps({'secret':name,'versionReady':True}),flush=True)
+ for email in (DEPLOY,CONFIG_READER):
+  run(['iam','service-accounts','add-iam-policy-binding',email,'--member='+principal,'--role=roles/iam.workloadIdentityUser','--condition=None'])
+ data={}
+ if imported:
+  shared,migration=runtime_bundles((PRIVATE/'runtime.env').read_text())
+  data={'ziper-runtime-properties':shared,'ziper-home-migration-properties':migration,'ziper-db-ca':(PRIVATE/'db-ca.pem').read_bytes()}
+ for name in SECRET_READERS:ensure_secret(name,data.get(name))
  keyfile=PRIVATE/'cloud-run-invoker.json'
  if not keyfile.exists():run(['iam','service-accounts','keys','create',str(keyfile),'--iam-account='+INVOKER])
  key=json.loads(keyfile.read_text());assert key['client_email']==INVOKER;keyfile.chmod(0o600)
  for name,value in [('CLOUD_RUN_SERVICE_ACCOUNT_JSON',json.dumps(key,separators=(',',':')).encode())]:
   p=subprocess.run(['gh','secret','set',name,'--repo','JECT-Study/Ziper-5th-Infra','--env','production'],input=value,capture_output=True)
   if p.returncode:raise SystemExit('GitHub secret registration failed')
- print(json.dumps({'project':PROJECT,'region':REGION,'artifactRepository':'ziper-releases','wifProvider':f'projects/{NUMBER}/locations/global/workloadIdentityPools/{pool}/providers/{provider}','runtimeSecretCount':2,'invokerSecretRegistered':True}),flush=True)
+ print(json.dumps({'project':PROJECT,'region':REGION,'artifactRepository':'ziper-releases','wifProvider':f'projects/{NUMBER}/locations/global/workloadIdentityPools/{pool}/providers/{provider}','runtimeSecretCount':len(SECRET_READERS),'runtimeImported':imported,'invokerSecretRegistered':True}),flush=True)
 
 if __name__ == "__main__":
  main()

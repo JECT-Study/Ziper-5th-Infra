@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Deliver only bounded release metadata and a read-only job credential over SSH."""
+"""Deliver only bounded release metadata, pinned configuration and a read-only job credential over SSH."""
+import base64
 import datetime
 import json
 import os
@@ -7,8 +8,20 @@ from pathlib import Path
 import subprocess
 import sys
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'deployment/home'))
-from registry_release import validate_manifest
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / 'deployment/home'))
+from registry_release import (CONFIG_SECRETS, PAYLOAD_LIMIT, secret_versions, validate_config,
+                              validate_manifest)
+
+
+def load_config(directory):
+    """Read the pinned Secret Manager files the workflow fetched; values never enter the report."""
+    versions = secret_versions(json.loads((ROOT / 'config/production.json').read_text()))
+    files = {name: base64.b64encode((directory / name).read_bytes()).decode()
+             for name in CONFIG_SECRETS.values()}
+    value = {'versions': versions, 'files': files}
+    config_id, _, _ = validate_config(value)
+    return value, config_id, versions
 
 
 def main():
@@ -17,8 +30,10 @@ def main():
         raise SystemExit('Supply the SSH executable and connection arguments')
     version = os.environ['GITHUB_SHA']
     manifest = validate_manifest(json.loads(Path('dist/registry-release.json').read_text()), version)
+    config, config_id, versions = load_config(Path(os.environ['ZIPER_HOME_CONFIG_DIR']))
     report = {'checkedAt': datetime.datetime.now(datetime.timezone.utc).isoformat(),
-              'scope': 'Restricted SSH control and registry pull', 'checks': {}, 'result': 'failed'}
+              'scope': 'Restricted SSH control, pinned configuration and registry pull', 'checks': {},
+              'configId': config_id, 'secretVersions': versions, 'result': 'failed'}
     try:
         result = subprocess.run(connection + ['check'], input=b'', capture_output=True, timeout=30)
         if result.returncode or b'ZIPER_CI_RECEIVER_READY' not in result.stdout:
@@ -29,8 +44,8 @@ def main():
             raise ValueError()
         report['checks']['generalCommandDenied'] = True
         payload = json.dumps({'manifest': manifest, 'username': os.environ['GITHUB_ACTOR'],
-                              'token': os.environ['GHCR_TOKEN']}).encode()
-        if len(payload) > 8192:
+                              'token': os.environ['GHCR_TOKEN'], 'config': config}).encode()
+        if len(payload) > PAYLOAD_LIMIT:
             raise ValueError()
         report['payloadBytes'] = len(payload)
         result = subprocess.run(connection + ['deploy-registry ' + version], input=payload,
@@ -55,6 +70,10 @@ def main():
                 b'Invalid registry control fields': 'control_fields',
                 b'Invalid registry actor': 'control_actor',
                 b'Invalid registry credential': 'control_credentials',
+                b'Invalid configuration bundle': 'control_configuration',
+                b'Pinned secret versions are missing or invalid': 'control_secret_versions',
+                b'Immutable configuration bundle mismatch': 'immutable_configuration_mismatch',
+                b'configuration bundle': 'home_configuration',
                 b'Pulled image JAR differs from tested artifact': 'tested_jar_mismatch',
                 b'Unsupported receiver command': 'receiver_not_installed',
                 b'Ziper deployment failed app readiness or tunnel startup': 'home_activation',
@@ -65,6 +84,9 @@ def main():
         expected = ('ZIPER_REGISTRY_MANIFEST_DIGEST=' + manifest['imageManifestDigest']).encode()
         if expected not in result.stdout:
             raise ValueError()
+        if ('ZIPER_CONFIG_ID=' + config_id).encode() not in result.stdout:
+            raise ValueError()
+        report['checks']['configStored'] = True
         report['checks']['registryDeploy'] = True
         report['result'] = 'passed'
     except (OSError, subprocess.TimeoutExpired, ValueError):

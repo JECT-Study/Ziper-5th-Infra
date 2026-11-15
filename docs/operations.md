@@ -16,11 +16,11 @@ Infra main의 현재 리뷰 예외는 [ADR0010](adr/0010-owner-only-review-bypas
 
 새 deploy-home workflow는 publish → deploy → notify로 나눈다. publish는 packages:write로 tested-release 이미지를 GHCR의 source SHA tag에 발행하고 registry-release artifact를 만든다. 기존 tag는 digest를 조회해 JAR·소스 번들 검증 후 재사용하며 덮어쓰지 않는다. 404 이외의 registry 조회 오류는 중단한다. repo 이름은 ghcr.io/ject-study/ziper-server로 고정한다.
 
-deploy job은 packages:read의 별도 job 토큰과 작은 metadata JSON만 SSH로 전달한다. 수신기의 deploy-registry는 정확한 digest를 pull하고 OCI config·JAR를 검증한 뒤 기존 신뢰 compose/deploy를 실행한다. Docker 인증은 임시 config에만 남고 종료 시 제거한다. runtime은 검증한 로컬 이미지만 사용한다. 새 수신기는 기존 image archive 전송 명령을 거부한다. caller를 먼저 새 GHCR workflow로 전환한 뒤 수신기를 설치하며, 이전 컨테이너·로컬 이미지와 release manifest는 보존한다.
+deploy job은 packages:read의 별도 job 토큰, 작은 metadata JSON과 고정 버전 설정 묶음만 SSH로 전달한다. 설정 묶음은 [ADR 0015](adr/0015-secret-manager-single-source.md)에 따라 `ziper-config-reader` SA로 Secret Manager에서 읽고, 수신기가 `/opt/ziper/private/config/<묶음 ID>/`에 불변으로 저장한다. 수신기의 deploy-registry는 정확한 digest를 pull하고 OCI config·JAR를 검증한 뒤 기존 신뢰 compose/deploy를 실행한다. Docker 인증은 임시 config에만 남고 종료 시 제거한다. runtime은 검증한 로컬 이미지만 사용한다. 새 수신기는 기존 image archive 전송 명령을 거부한다. caller를 먼저 새 GHCR workflow로 전환한 뒤 수신기를 설치하며, 이전 컨테이너·로컬 이미지와 release manifest는 보존한다.
 
 홈 `/opt/ziper/ci`에는 receive.py·image_identity.py·registry_release.py·deploy.sh와 config/production.json의 production.json을 함께 설치한다. Source caller에는 packages:write 권한이 필요하며 두 Infra pin을 성공한 실제 main SHA로 함께 갱신한다. `publish.outputs.image`와 `digest`, `registry-release` artifact는 Cloud Run 경로가 소비할 수 있다. 백업을 연결할 때 publish와 home deploy 사이에 검증 gate를 두며 홈만 성공한 결과를 쌍 배포로 기록하지 않는다. 정책은 [ADR 0007](adr/0007-ghcr-home-delivery.md)을 따른다.
 
-새 artifact의 receiver-control-proof에는 check·일반 명령 거부·registry deploy 판정과 payload 크기·정적 실패 코드만 저장한다. 토큰·전체 stderr·응답 본문은 저장하지 않는다. 실제 발행·pull·readiness 결과는 실행별 증거를 따른다.
+새 artifact의 receiver-control-proof에는 check·일반 명령 거부·registry deploy 판정, 설정 묶음 ID·고정 버전 번호와 payload 크기·정적 실패 코드만 저장한다. 설정 값은 저장하지 않는다. 토큰·전체 stderr·응답 본문은 저장하지 않는다. 실제 발행·pull·readiness 결과는 실행별 증거를 따른다.
 
 이 저장소는 Worker·DO·홈 배포 수신기·재사용 배포 workflow의 소유 저장소다. Server는 수동 실행 진입점과 애플리케이션을 관리한다. 2026-11-06 홈 릴리스가 실행되었고 공개·보호 origin의 HTTP 200을 확인했다. Worker·DO·route와 Cloud Run의 완료 여부는 실행별 증거를 따른다. 현재 실행 결과와 제한은 [검증 문서](verification.md)와 [nightly walkthrough](nightly-walkthrough-2026-11-06.md)를 따른다.
 
@@ -129,7 +129,7 @@ cloudflared 시작이나 current-version 기록 실패도 app/readiness 실패�
 
 쌍 배포는 GHCR 발행 → AR 미러 준비 → protected home 확인 → Cloud Run runtime·private probes → 홈 runtime·public probes 순서다. 준비 발행은 보류 중에도 가능하며 런타임은 각 변경 직전의 시간 가드로 차단한다. 준비 오류를 deferred로 숨기지 않는다. 배포 성공 알림은 양쪽 readiness가 통과한 때만 paired다.
 
-GCP 부트스트랩은 `ZIPER_GCLOUD=<gcloud 경로> python3 scripts/bootstrap-gcp-production.py`로 명시 실행한다. 비밀 원본은 로컬 .config/ziper/deployment이고 값은 출력하지 않는다. source protection과 전용 WIF 조건을 먼저 설정하며 CI 장기 GCP 키는 만들지 않는다. 비용 cap은 Cloud Run 범위이며 지출 0원의 보장은 아니다.
+GCP 부트스트랩은 `ZIPER_GCLOUD=<gcloud 경로> python3 scripts/bootstrap-gcp-production.py`로 명시 실행한다. 운영 비밀의 원본은 Secret Manager의 고정 버전이다([ADR 0015](adr/0015-secret-manager-single-source.md)). 기본 실행은 SA·WIF·Secret 접근 권한만 맞추고 노트북 파일을 읽지 않는다. 최초 이관에만 `--import-runtime-env`로 .config/ziper/deployment의 runtime.env와 db-ca.pem을 올리며, 출력한 최신 버전 번호를 `config/production.json`의 `secretVersions`에 반영한다. 값은 출력하지 않는다. source protection과 전용 WIF 조건을 먼저 설정하며 CI 장기 GCP 키는 만들지 않는다. 비용 cap은 Cloud Run 범위이며 지출 0원의 보장은 아니다.
 
 `deployment/home/recovery.py`는 root 전용 lease로 집어 app만 복구한다. 독립 systemd timer를 설치하고, 실행 중인 app에 seconds0 lease를 arm하여 다음 tick의 already_running과 lease 제거를 실제 대조한 후에만 stop한다. `scripts/observe-production-e2e.py`는 token을 private 파일에서 읽고 origin·release·분 표본·전이·단조 시계를 보존한다. 예정 backup은 circuit failover 성공으로 계산하지 않는다. 자세한 결정은 [ADR 0008](adr/0008-private-cloud-run-and-production-e2e.md), 실행 범위는 PR #1과 날짜별 증거를 따른다.
 
@@ -161,9 +161,22 @@ Cloud SDK592의 run services/revisions describe는 없는 객체에 NOT_FOUND �
 
 ### Cloud Run Secret 볼륨 교체
 
-새 source revision의 단일 `gcloud run deploy` 명령은 `--clear-volume-mounts --clear-volumes`와 기존 `--set-secrets`를 함께 전달한다. SDK592는 `--set-secrets` 갱신 시 이전 마운트만 지우고 사용하지 않는 볼륨을 남겼다. 전체 볼륨을 정리한 뒤 필요한 두 Secret 파일을 같은 요청의 최종 구성으로 만든다. 빈 Secret 상태를 별도 배포하지 않는다. 기존 revision의 정확한 두 볼륨·마운트·Secret 버전1 검사는 유지하며, 같은 source 재실행은 검증된 revision을 읽고 재사용한다. 범위는 전용 `ziper-backup` 단일 컨테이너이며 기존 다른 볼륨을 보존하는 일반 배포 도구가 아니다.
+새 source revision의 단일 `gcloud run deploy` 명령은 `--clear-volume-mounts --clear-volumes`와 기존 `--set-secrets`를 함께 전달한다. SDK592는 `--set-secrets` 갱신 시 이전 마운트만 지우고 사용하지 않는 볼륨을 남겼다. 전체 볼륨을 정리한 뒤 필요한 두 Secret 파일을 같은 요청의 최종 구성으로 만든다. 빈 Secret 상태를 별도 배포하지 않는다. 기존 revision의 정확한 두 볼륨·마운트 검사는 유지하고 Secret 버전은 `config/production.json`의 고정 번호와 대조하며, 같은 source 재실행은 검증된 revision을 읽고 재사용한다. 범위는 전용 `ziper-backup` 단일 컨테이너이며 기존 다른 볼륨을 보존하는 일반 배포 도구가 아니다.
 
 설정의 두 목록 제거는 [공식 문서](https://docs.cloud.google.com/run/docs/configuring/services/cloud-storage-volume-mounts)의 옵션을 사용한다. SDK592의 구성 변경 순서는 마운트 제거 → 볼륨 제거 → Secret 추가이며, 실제 재현과 새 runtime 통과는 PR 실행 증거로 구분한다.
+
+### 운영 비밀 교체와 최초 이관
+
+운영 비밀의 원본은 Secret Manager다. 값을 바꿀 때는 다음 순서를 따른다.
+
+1. 해당 Secret에 새 버전을 추가한다. 값은 셸 인자나 로그에 넣지 않고 `--data-file`로 전달한다.
+2. `config/production.json`의 `secretVersions` 번호를 PR로 올리고 main CI를 통과시킨다.
+3. 홈 `/opt/ziper/ci`의 production.json을 `install-home-control.py`로 같은 SHA에서 갱신한다. Server caller의 두 Infra pin도 같은 SHA로 올린다.
+4. 쌍 배포를 실행하고 양쪽 readiness와 receiver-control-proof의 묶음 ID를 확인한 뒤 이전 버전을 비활성화한다.
+
+최초 이관 순서: Infra 병합 → `bootstrap-gcp-production.py --import-runtime-env`로 `ziper-home-migration-properties`·`ziper-config-reader`·WIF 연결 생성 → 출력 버전과 `secretVersions` 대조 → 홈 제어 파일 설치와 Server pin 갱신을 같은 배포 창에서 수행 → 쌍 배포. 새 수신기는 설정 묶음이 없는 이전 workflow 페이로드를 거부한다.
+
+새 방식으로 두 번 이상 성공 배포하기 전에는 홈 `runtime.env`를 지우지 않는다. 이전 release의 compose가 롤백에 이 파일을 쓰기 때문이다. 노트북 원본도 같은 시점 이후에 지운다. 오래된 `/opt/ziper/private/config/` 묶음은 실행 중·롤백 대상 컨테이너가 쓰지 않는 것을 확인한 뒤 수동으로만 정리한다.
 
 ### 쌍 배포 증거 대조
 

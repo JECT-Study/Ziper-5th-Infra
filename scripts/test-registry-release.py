@@ -28,6 +28,7 @@ def load(name, path):
 
 
 receiver = load('receiver_registry', HOME / 'receive.py')
+fetcher = load('home_config_fetcher', Path(__file__).with_name('fetch-home-config.py'))
 publisher = load('publisher_registry', Path(__file__).with_name('publish-registry-release.py'))
 VERSION, PREVIOUS = 'a' * 40, 'b' * 40
 CONFIG = json.dumps({'os': 'linux', 'architecture': 'amd64', 'rootfs': {'type': 'layers', 'diff_ids': []}}).encode()
@@ -47,9 +48,24 @@ def manifest():
             'jarSha256': hashlib.sha256(JAR).hexdigest()}
 
 
-def payload(metadata=None):
+VERSIONS = {'ziper-runtime-properties': '1', 'ziper-home-migration-properties': '1', 'ziper-db-ca': '1'}
+CONFIG_FILES = {'application.properties': b'DB_PASSWORD=fixture-private-config\n',
+                'migration.properties': b'MIGRATION_PASSWORD=fixture-private-migrator\n',
+                'db-ca.pem': b'-----BEGIN CERTIFICATE-----\nfixture\n-----END CERTIFICATE-----\n'}
+
+
+def config(files=None, versions=None):
+    return {'versions': versions or VERSIONS,
+            'files': {name: base64.b64encode(data).decode() for name, data in (files or CONFIG_FILES).items()}}
+
+
+def config_id(files=None):
+    return registry_release.config_identity(VERSIONS, files or CONFIG_FILES)
+
+
+def payload(metadata=None, bundle=None):
     return json.dumps({'manifest': metadata or manifest(), 'username': 'fixture-actor',
-                       'token': 'fixture-private-token'}).encode()
+                       'token': 'fixture-private-token', 'config': bundle or config()}).encode()
 
 
 class Fixture:
@@ -65,8 +81,7 @@ class Fixture:
         (self.root / 'docker-client/config.json').write_text('{}')
         private = self.root / 'private'
         private.mkdir()
-        for name in ('runtime.env', 'db-ca.pem', 'cloudflared-token'):
-            (private / name).write_text('fixture')
+        (private / 'cloudflared-token').write_text('fixture')
         (self.root / 'fixture.jar').write_bytes(JAR)
         (self.root / 'config.json').write_bytes(CONFIG)
         descriptor = {'digest': REGISTRY_DIGEST, 'size': len(REGISTRY_RAW),
@@ -94,7 +109,7 @@ import fcntl,hashlib,io,json,os,pathlib,sys,tarfile
 +with (r/'deploy.lock').open('a+b') as lock:
 + try:fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB);held=False
 + except BlockingIOError:held=True
-+with (r/'commands').open('a') as f:f.write(json.dumps({'args':a,'lockHeld':held})+'\\n')
++with (r/'commands').open('a') as f:f.write(json.dumps({'args':a,'lockHeld':held,'configDir':os.environ.get('ZIPER_CONFIG_DIR')})+'\\n')
 +tags=json.loads((r/'tags.json').read_text())
 +registry=json.loads((r/'registry-verbose.json').read_text());new_id=registry['Descriptor']['digest']
 +if a[0]=='login':
@@ -140,6 +155,13 @@ import fcntl,hashlib,io,json,os,pathlib,sys,tarfile
         (target / 'compose.yml').write_text('services: {}\n')
         return target
 
+    def stored_config(self, files=None):
+        target = self.root / 'private' / 'config' / config_id(files)
+        target.mkdir(parents=True)
+        for name, data in (files or CONFIG_FILES).items():
+            (target / name).write_bytes(data)
+        return target
+
     def calls(self):
         path = self.root / 'commands'
         return [json.loads(line) for line in path.read_text().splitlines()] if path.exists() else []
@@ -178,7 +200,7 @@ class RegistryTests(unittest.TestCase):
             with self.subTest(replacement=replacement), self.assertRaises(SystemExit):
                 registry_release.read_payload(io.BytesIO(json.dumps(replacement).encode()), VERSION)
         with self.assertRaises(SystemExit):
-            registry_release.read_payload(io.BytesIO(b'x' * 8193), VERSION)
+            registry_release.read_payload(io.BytesIO(b'x' * (registry_release.PAYLOAD_LIMIT + 1)), VERSION)
 
     def test_unsupported_and_legacy_commands_fail_before_reading_credentials(self):
         for command in ('whoami', 'deploy ' + VERSION, 'deploy-registry latest', 'deploy-registry ' + VERSION + ';whoami'):
@@ -359,10 +381,7 @@ elif sys.argv[-1]=='whoami':sys.exit(1)
 else:sys.stdin.read();print('ZIPER_DEPLOY_DEFERRED');sys.exit(75)
 ''')
         ssh.chmod(0o700)
-        env = {**f.env, 'GITHUB_SHA': VERSION, 'GITHUB_ACTOR': 'fixture-actor',
-               'GHCR_TOKEN': 'fixture-private-token', 'GITHUB_OUTPUT': str(f.root / 'outputs')}
-        result = subprocess.run([sys.executable, str(Path(__file__).with_name('deliver-registry-release.py')),
-                                 str(ssh)], cwd=f.root, env=env, capture_output=True, timeout=5)
+        result = self.deliver(f, ssh)
         self.assertEqual(result.returncode, 0)
         self.assertNotIn(b'fixture-private-token', result.stdout + result.stderr)
         report = json.loads((dist / 'receiver-control-proof.json').read_text())
@@ -396,6 +415,161 @@ else:sys.stdin.read();print('ZIPER_DEPLOY_DEFERRED');sys.exit(75)
         with patch.object(receiver, 'ensure_runtime_window', side_effect=SystemExit(75)), self.assertRaises(SystemExit):
             receiver.deploy_registry(VERSION, io.BytesIO(payload()), f.root)
         self.assertEqual(f.calls(), [])
+        self.assertFalse((f.root / 'private' / 'config').exists())
+
+    def deliver(self, f, ssh):
+        fetched = f.root / 'fetched-config'
+        fetched.mkdir(exist_ok=True)
+        for name, data in CONFIG_FILES.items():
+            (fetched / name).write_bytes(data)
+        env = {**f.env, 'GITHUB_SHA': VERSION, 'GITHUB_ACTOR': 'fixture-actor',
+               'GHCR_TOKEN': 'fixture-private-token', 'GITHUB_OUTPUT': str(f.root / 'outputs'),
+               'ZIPER_HOME_CONFIG_DIR': str(fetched)}
+        return subprocess.run([sys.executable, str(Path(__file__).with_name('deliver-registry-release.py')),
+                               str(ssh)], cwd=f.root, env=env, capture_output=True, timeout=5)
+
+    def test_configuration_bundle_rejects_unpinned_extra_empty_or_oversized_files(self):
+        encoded = config()['files']
+        for bundle in [
+            {**config(), 'extra': True},
+            config(versions={**VERSIONS, 'ziper-db-ca': 'latest'}),
+            config(versions={k: v for k, v in VERSIONS.items() if k != 'ziper-db-ca'}),
+            {'versions': VERSIONS, 'files': {k: v for k, v in encoded.items() if k != 'migration.properties'}},
+            {'versions': VERSIONS, 'files': {**encoded, 'runtime.env': encoded['db-ca.pem']}},
+            {'versions': VERSIONS, 'files': {**encoded, 'db-ca.pem': 'not base64!'}},
+            config(files={**CONFIG_FILES, 'db-ca.pem': b''}),
+            config(files={**CONFIG_FILES, 'db-ca.pem': b'x' * (registry_release.CONFIG_FILE_LIMIT + 1)}),
+            config(files={**CONFIG_FILES, 'application.properties': b'A=1\0'}),
+        ]:
+            with self.subTest(bundle=json.dumps(bundle)[:80]), self.assertRaises(SystemExit) as error:
+                registry_release.read_payload(io.BytesIO(payload(bundle=bundle)), VERSION)
+            self.assertNotIn('fixture-private', str(error.exception))
+
+    def test_configuration_identity_tracks_versions_and_content_not_order(self):
+        reordered = dict(reversed(list(CONFIG_FILES.items())))
+        self.assertEqual(config_id(reordered), config_id())
+        self.assertNotEqual(config_id({**CONFIG_FILES, 'db-ca.pem': b'rotated'}), config_id())
+        self.assertNotEqual(registry_release.config_identity({**VERSIONS, 'ziper-db-ca': '2'}, CONFIG_FILES), config_id())
+
+    def test_receiver_stores_immutable_bundle_and_records_it_with_release(self):
+        f = self.fixture()
+        with patch.dict(os.environ, f.env, clear=True):
+            receiver.deploy_registry(VERSION, io.BytesIO(payload()), f.root)
+        stored = f.root / 'private' / 'config' / config_id()
+        self.assertEqual({path.name: path.read_bytes() for path in stored.iterdir()}, CONFIG_FILES)
+        self.assertTrue(all(path.stat().st_mode & 0o777 == 0o444 for path in stored.iterdir()))
+        self.assertEqual((f.root / 'current-config').read_text().strip(), config_id())
+        self.assertEqual((f.root / 'current-version').read_text().strip(), VERSION)
+        self.assertTrue(all(call['configDir'] == str(stored) for call in f.calls() if call['args'][0] == 'compose'))
+        self.assertNotIn('fixture-private', json.dumps(f.calls()))
+        self.assertFalse(any(path.name.startswith('.incoming-') for path in stored.parent.iterdir()))
+
+    def test_tampered_stored_bundle_is_never_replaced_or_started(self):
+        f = self.fixture()
+        stored = f.stored_config()
+        (stored / 'db-ca.pem').write_bytes(b'tampered')
+        with patch.dict(os.environ, f.env, clear=True), self.assertRaises(SystemExit) as error:
+            receiver.deploy_registry(VERSION, io.BytesIO(payload()), f.root)
+        self.assertEqual(str(error.exception), 'Immutable configuration bundle mismatch')
+        self.assertEqual((stored / 'db-ca.pem').read_bytes(), b'tampered')
+        self.assertFalse((f.root / 'current-runtime').exists())
+        self.assertFalse((f.root / 'current-config').exists())
+
+    def test_failed_rotation_restores_previous_release_and_configuration(self):
+        f = self.fixture()
+        f.release(PREVIOUS, OLD_ID)
+        previous = f.stored_config({**CONFIG_FILES, 'application.properties': b'DB_PASSWORD=previous\n'})
+        (f.root / 'current-version').write_text(PREVIOUS + '\n')
+        (f.root / 'current-config').write_text(previous.name + '\n')
+        (f.root / 'current-runtime').write_text(PREVIOUS)
+        (f.root / 'fail-cloudflared').touch()
+        with patch.dict(os.environ, f.env, clear=True), self.assertRaises(SystemExit):
+            receiver.deploy_registry(VERSION, io.BytesIO(payload()), f.root)
+        self.assertEqual((f.root / 'current-version').read_text().strip(), PREVIOUS)
+        self.assertEqual((f.root / 'current-config').read_text().strip(), previous.name)
+        app_starts = [(Path(call['args'][call['args'].index('-f') + 1]).parent.name, Path(call['configDir']).name)
+                      for call in f.calls() if call['args'][0] == 'compose' and call['args'][-1] == 'app'
+                      and 'up' in call['args']]
+        self.assertEqual(app_starts, [(VERSION, config_id()), (PREVIOUS, previous.name)])
+
+    def test_release_record_failure_after_config_record_restores_previous_configuration(self):
+        f = self.fixture()
+        f.release(PREVIOUS, OLD_ID)
+        previous = f.stored_config({**CONFIG_FILES, 'application.properties': b'DB_PASSWORD=previous\n'})
+        (f.root / 'current-version').write_text(PREVIOUS + '\n')
+        (f.root / 'current-config').write_text(previous.name + '\n')
+        (f.root / 'current-version.next').mkdir()
+        with patch.dict(os.environ, f.env, clear=True), self.assertRaises(SystemExit):
+            receiver.deploy_registry(VERSION, io.BytesIO(payload()), f.root)
+        self.assertEqual((f.root / 'current-config').read_text().strip(), previous.name)
+        self.assertEqual((f.root / 'current-version').read_text().strip(), PREVIOUS)
+
+    def test_manual_redeploy_reuses_recorded_bundle_and_refuses_without_one(self):
+        f = self.fixture()
+        f.release(VERSION, NEW_ID)
+        tags = json.loads((f.root / 'tags.json').read_text())
+        (f.root / 'tags.json').write_text(json.dumps({**tags, 'ziper-server:' + VERSION: NEW_ID}))
+        result = subprocess.run(['bash', str(HOME / 'deploy.sh'), VERSION], env=f.env, capture_output=True, timeout=5)
+        self.assertEqual(result.returncode, 2)
+        self.assertIn(b'stored configuration bundle is required', result.stderr)
+        self.assertEqual(f.calls(), [])
+        stored = f.stored_config()
+        (f.root / 'current-config').write_text(stored.name + '\n')
+        result = subprocess.run(['bash', str(HOME / 'deploy.sh'), VERSION], env=f.env, capture_output=True, timeout=30)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue(all(call['configDir'] == str(stored) for call in f.calls() if call['args'][0] == 'compose'))
+
+    def test_fetcher_reads_only_pinned_versions_into_private_files(self):
+        f = self.fixture()
+        gcloud = f.binary / 'gcloud'
+        gcloud.write_text('''#!/usr/bin/env python3
+import json,os,pathlib,sys
+a=sys.argv[1:];r=pathlib.Path(os.environ['FIXTURE_ROOT'])
+with (r/'gcloud-calls').open('a') as f:f.write(json.dumps(a)+'\\n')
+if (r/'gcloud-deny').exists():print('PERMISSION_DENIED fixture-private-detail',file=sys.stderr);sys.exit(1)
+pathlib.Path(a[a.index('--out-file')+1]).write_bytes(b'fixture-private-'+a[a.index('--secret')+1].encode())
+''')
+        gcloud.chmod(0o700)
+        target = f.root / 'fetched'
+        with patch.dict(os.environ, f.env, clear=True):
+            fetcher.fetch(target, str(gcloud))
+        policy = registry_release.secret_versions(json.loads((HOME.parents[1] / 'config/production.json').read_text()))
+        calls = [json.loads(line) for line in (f.root / 'gcloud-calls').read_text().splitlines()]
+        self.assertEqual({(call[3], call[5]) for call in calls}, {(version, secret) for secret, version in policy.items()})
+        self.assertFalse(any('latest' in call for call in calls))
+        self.assertEqual({path.name for path in target.iterdir()}, set(registry_release.CONFIG_SECRETS.values()))
+        self.assertTrue(all(path.stat().st_mode & 0o777 == 0o600 for path in target.iterdir()))
+        (f.root / 'gcloud-deny').touch()
+        with patch.dict(os.environ, f.env, clear=True), self.assertRaises(SystemExit) as error:
+            fetcher.fetch(f.root / 'denied', str(gcloud))
+        self.assertNotIn('fixture-private', str(error.exception))
+
+    def test_sender_requires_receiver_to_confirm_the_same_configuration(self):
+        f = self.fixture()
+        dist = f.root / 'dist'
+        dist.mkdir()
+        (dist / 'registry-release.json').write_text(json.dumps(manifest()))
+        for confirmed, code in [(config_id(), 0), ('0' * 64, 1)]:
+            with self.subTest(confirmed=confirmed[:8]):
+                ssh = f.binary / 'ssh'
+                ssh.write_text(f'''#!/usr/bin/env python3
+import json,sys
+if sys.argv[-1]=='check':print('ZIPER_CI_RECEIVER_READY')
+elif sys.argv[-1]=='whoami':sys.exit(1)
+else:
+ json.loads(sys.stdin.read())['config']
+ print('ZIPER_REGISTRY_MANIFEST_DIGEST={manifest()['imageManifestDigest']}')
+ print('ZIPER_CONFIG_ID={confirmed}')
+''')
+                ssh.chmod(0o700)
+                result = self.deliver(f, ssh)
+                self.assertEqual(result.returncode, code)
+                self.assertNotIn(b'fixture-private', result.stdout + result.stderr)
+                report = json.loads((dist / 'receiver-control-proof.json').read_text())
+                self.assertEqual(report['configId'], config_id())
+                self.assertEqual(report['secretVersions'], VERSIONS)
+                self.assertEqual(report['result'], 'passed' if code == 0 else 'failed')
+                self.assertNotIn('fixture-private', json.dumps(report))
 
 
 if __name__ == '__main__':

@@ -294,6 +294,34 @@ class CloudRunDeployTests(unittest.TestCase):
             self.assertEqual(str(error.exception), 'immutable_revision_configuration_drift_requires_new_source')
             self.assertEqual(api.call_count, 1)
 
+    def test_cloud_run_mounts_the_pinned_versions_from_production_policy(self):
+        policy = json.loads(deploy.SCHEDULE.read_text())
+        rotated = {**policy['secretVersions'], 'ziper-runtime-properties': '3', 'ziper-db-ca': '2'}
+        with patch.object(deploy, 'pinned_secret_versions', return_value=rotated):
+            flag = deploy.secret_flag()
+            self.assertIn('ziper-runtime-properties:3', flag)
+            self.assertIn('ziper-db-ca:2', flag)
+            self.assertNotIn('ziper-home-migration-properties', flag)
+            # A revision still mounting the previous version is drift, not an accepted state.
+            self.assertFalse(deploy.revision_matches(revision(), mirror()))
+            current = revision()
+            for volume in current['spec']['volumes']:
+                volume['secret']['items'][0]['key'] = rotated[volume['secret']['secretName']]
+            self.assertTrue(deploy.revision_matches(current, mirror()))
+
+    def test_missing_or_unpinned_secret_versions_refuse_deployment_flags(self):
+        for versions in (None, {'ziper-runtime-properties': 'latest', 'ziper-db-ca': '1',
+                                'ziper-home-migration-properties': '1'}):
+            with self.subTest(versions=versions), tempfile.TemporaryDirectory() as directory:
+                policy = Path(directory) / 'production.json'
+                value = json.loads(deploy.SCHEDULE.read_text())
+                value.pop('secretVersions')
+                if versions:
+                    value['secretVersions'] = versions
+                policy.write_text(json.dumps(value))
+                with patch.object(deploy, 'SCHEDULE', policy), self.assertRaises(SystemExit):
+                    deploy.secret_flag()
+
     def test_revision_requires_exact_runtime_identity(self):
         for identity in (None, 'default', 'attacker@ziper-production.iam.gserviceaccount.com'):
             changed = revision()
@@ -473,6 +501,28 @@ class OidcTrustTests(unittest.TestCase):
         with patch.object(bootstrap, 'run', side_effect=[self.trust(bootstrap.OIDC_LEGACY_SUBJECT), {}, self.trust(bootstrap.OIDC_LEGACY_SUBJECT)]):
             with self.assertRaises(SystemExit):
                 bootstrap.ensure_wif_provider('ziper-github', 'ziper-server')
+
+
+class SecretSourceTests(unittest.TestCase):
+    def test_import_splits_migrator_credentials_out_of_the_shared_runtime_secret(self):
+        shared, migration = bootstrap.runtime_bundles(
+            '# comment\nDB_PASSWORD="fixture-runtime"\nMIGRATION_PASSWORD=fixture-migrator\nJWT_ISSUER=ziper-server\n')
+        self.assertEqual(shared, b'DB_PASSWORD=fixture-runtime\nJWT_ISSUER=ziper-server\n')
+        self.assertEqual(migration, b'MIGRATION_PASSWORD=fixture-migrator\n')
+        with self.assertRaises(SystemExit):
+            bootstrap.runtime_bundles('DB_PASSWORD=fixture-runtime\n')
+
+    def test_cloud_run_runtime_cannot_read_the_home_migrator_secret(self):
+        self.assertEqual(bootstrap.SECRET_READERS['ziper-home-migration-properties'], (bootstrap.CONFIG_READER,))
+        for name in ('ziper-runtime-properties', 'ziper-db-ca'):
+            self.assertEqual(set(bootstrap.SECRET_READERS[name]), {bootstrap.RUNTIME, bootstrap.CONFIG_READER})
+        self.assertEqual(set(bootstrap.SECRET_READERS), set(deploy.secret_versions(json.loads(deploy.SCHEDULE.read_text()))))
+
+    def test_without_import_an_empty_secret_is_refused_and_nothing_is_uploaded(self):
+        with patch.object(bootstrap, 'run', side_effect=[{'name': 'existing'}, []]) as command:
+            with self.assertRaises(SystemExit):
+                bootstrap.ensure_secret('ziper-home-migration-properties')
+        self.assertFalse(any('add' in call.args[0] and 'versions' in call.args[0] for call in command.call_args_list))
 
 
 if __name__ == '__main__':

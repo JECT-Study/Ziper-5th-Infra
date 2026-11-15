@@ -4,10 +4,9 @@ services:
     image: ${ZIPER_IMAGE:?Supply the verified release image}
     pull_policy: never
     restart: always
-    env_file:
-      - ${ZIPER_PRIVATE_DIR:?Supply the private configuration directory}/runtime.env
     environment:
       SPRING_PROFILES_ACTIVE: prod
+      SPRING_CONFIG_IMPORT: file:/run/ziper-config/application.properties,file:/run/ziper-config/migration.properties
       APP_RUNTIME_MODE: server
       SWAGGER_ENABLED: 'false'
       PORT: '8080'
@@ -19,7 +18,9 @@ services:
     ports:
       - '127.0.0.1:${ZIPER_HTTP_PORT:-18081}:8080'
     volumes:
-      - ${ZIPER_PRIVATE_DIR}/db-ca.pem:/run/ziper/db-ca.pem:ro
+      - ${ZIPER_CONFIG_DIR:?Supply the pinned configuration bundle}/application.properties:/run/ziper-config/application.properties:ro
+      - ${ZIPER_CONFIG_DIR}/migration.properties:/run/ziper-config/migration.properties:ro
+      - ${ZIPER_CONFIG_DIR}/db-ca.pem:/run/ziper/db-ca.pem:ro
     read_only: true
     tmpfs:
       - /tmp:size=134217728,mode=1777
