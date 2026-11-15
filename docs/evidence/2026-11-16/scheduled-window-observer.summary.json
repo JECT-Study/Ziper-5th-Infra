@@ -1,0 +1,15 @@
+{
+  "observations": 460,
+  "expectedRelease": "1338095bf31ad035dbf95cd100ed10a5939c58ea",
+  "homeHealthy": true,
+  "firstBackupSeconds": null,
+  "failoverWithin600Seconds": false,
+  "halfOpenSeen": false,
+  "halfOpenFailureSeen": false,
+  "recoveredClosedAndHome": false,
+  "releaseMismatch": false,
+  "duplicateSampleSlots": false,
+  "faultMarkerPresent": false,
+  "ok": true,
+  "verdict": "OBSERVED"
+}

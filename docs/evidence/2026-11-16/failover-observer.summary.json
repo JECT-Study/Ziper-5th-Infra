@@ -1,0 +1,15 @@
+{
+  "observations": 95,
+  "expectedRelease": "1338095bf31ad035dbf95cd100ed10a5939c58ea",
+  "homeHealthy": true,
+  "firstBackupSeconds": 384.096,
+  "failoverWithin600Seconds": true,
+  "halfOpenSeen": true,
+  "halfOpenFailureSeen": true,
+  "recoveredClosedAndHome": true,
+  "releaseMismatch": false,
+  "duplicateSampleSlots": false,
+  "faultMarkerPresent": true,
+  "ok": true,
+  "verdict": "VERIFIED"
+}

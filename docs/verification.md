@@ -1,6 +1,10 @@
 # 검증 조건과 실제 확인 범위
 
-## 최신 판정: 2026-11-07
+## 최신 판정: 2026-11-16
+
+[2026-11-16 운영 failover E2E와 새벽 예약 전환](#2026-11-16-운영-failover-e2e와-새벽-예약-전환)이 최신 상태입니다. 운영 Worker 배포, 홈 장애 주입 후 600초 이내 Cloud Run 응답, 회로 복구, 03:00–06:00 예약 전환과 부팅 후 홈 복귀를 실제 운영에서 확인했습니다. 아래 과거 판정은 실행 당시의 범위입니다.
+
+## 2026-11-07 판정
 
 [Nightly walkthrough](nightly-walkthrough-2026-11-07.md)의 표와 [원본 증거](evidence/2026-11-07/)가 최신 상태입니다. GHCR/AR 준비를 같은 release로 두 번 성공했지만 새 runtime 쌍 배포·Worker 배포·실제 장애 전환은 미완료입니다. 최신 읽기 전용 Actions 실행은 자격 일치 true와 HTTP403, `cf-mitigated: challenge`를 기록했습니다. 정확한 Cloudflare 규칙은 보안 API 또는 대시보드 이벤트 확인이 필요합니다. 아래 과거 실행은 그 당시의 범위이며 최신 운영 성공으로 승격하지 않습니다.
 
@@ -60,16 +64,18 @@ Infra Repository Secret의 CLOUDFLARE_API_TOKEN을 실제 runner에서 사용한
 
 ## 미실행 항목과 필요한 전제
 
+표의 원래 행은 2026-11-05 기준입니다. 2026-11-16에 확인한 항목은 현재 상태 열만 갱신했습니다.
+
 | 항목 | 현재 상태 | 다음에 필요한 확인 |
 | --- | --- | --- |
 | 원격 PR/main CI | 미실행; 사용자 선택으로 로컬 우선 | 비공개 조직 Actions의 추가 과금 중단 설정 확인 후 초안을 ready-for-review로 전환 |
 | main 머지·수동 배포 gate | YAML 정적 검사만 통과 | 실제 main CI 성공 SHA와 수동 dispatch를 연결해 확인 |
-| 운영 Worker·DO·route | 생성·배포하지 않음 | 홈 앱 배포, 전용 origin·Access, production 환경 값·제한된 API token |
+| 운영 Worker·DO·route | 2026-11-16 배포·확인 | 홈 앱 배포, 전용 origin·Access, production 환경 값·제한된 API token |
 | 홈 전용 호스트 차단 | 미설정·미검증 | 토큰 없는 직접 접근 거부, Worker 자격으로 readiness 허용 |
-| 운영 1분 샘플링 | 미검증 | 사용자 트래픽 없이도 실제 alarm 표본이 이어지는지 관찰 |
-| Cloud Run | 기본 비활성; 리소스·청구 계정·키 미생성 | 비용 조건, private IAM, 실제 서비스 URL, cold start·동일 DB 연결 |
-| 10분 내 백업 성공 | **미검증·현재 비활성 백업에서는 달성 불가** | 홈 장애 주입 시각부터 최초 백업 성공 응답까지 600초 이하 측정 |
-| 운영 복구 FSM | 미검증 | 홈 복구 후 쿨다운·3회 성공·CLOSED·라우팅 복귀 추적 |
+| 운영 1분 샘플링 | 2026-11-16 관찰 | 사용자 트래픽 없이도 실제 alarm 표본이 이어지는지 관찰 |
+| Cloud Run | 2026-11-16 운영 응답 확인 | 비용 조건, private IAM, 실제 서비스 URL, cold start·동일 DB 연결 |
+| 10분 내 백업 성공 | 2026-11-16 384초 | 홈 장애 주입 시각부터 최초 백업 성공 응답까지 600초 이하 측정 |
+| 운영 복구 FSM | 2026-11-16 HALF_OPEN 실패·재시도 후 CLOSED | 홈 복구 후 쿨다운·3회 성공·CLOSED·라우팅 복귀 추적 |
 | 실제 중복 쓰기 | 미검증 | 전용 테스트 데이터로 불확실한 네트워크 실패를 주입하고 DB 결과 조회 |
 | 실제 부하·비용 | 미측정 | 요청당 DO 지연·병목·계정 무료 한도와 1분 검사 비용 합산 |
 | Sentry uptime·Discord | 이번 작업에서 생성·수신 확인하지 않음 | 공개 서비스 준비, 별도 uptime 설정, Discord 서버 관리 권한 |
@@ -175,3 +181,47 @@ Worker 배포·분 단위 표본·실제 장애 주입·600초 failover·HALF_OP
 Infra #24(647291d)와 Server #58(566ef72)을 병합하고 GCP 부트스트랩 이관, 홈 제어 파일 9개 설치 후 [Server 실행 43714629616](https://github.com/JECT-Study/Ziper-5th-Server/actions/runs/43714629616)으로 쌍 배포했다. 시도 1·2 모두 네 job이 성공했다. receiver 증거([시도1](evidence/2026-11-15/receiver-control-proof-attempt-1.json), [시도2](evidence/2026-11-15/receiver-control-proof-attempt-2.json))의 묶음 ID와 고정 버전이 같고, 재실행은 같은 묶음을 재사용하며 app을 재생성하지 않았다. 독립 조회([readback](evidence/2026-11-15/secret-source-readback.json))로 홈 파일 해시와 Secret Manager v1 일치, 마이그레이션 Secret의 Cloud Run 미마운트, Secret 접근 주체, 로그 2,146줄의 비밀값 부재를 확인했다. 운영 롤백 경로는 단위 테스트로만 확인했다.
 
 배포 전 홈 origin은 11-08 06:02 부팅부터 `Exited (127)`였다. WSL bind source 부재로 daemon 자동 재시작이 실패했고 배포판 안의 `docker start`로 복구했다([조사](evidence/2026-11-15/home-boot-outage.json)). 대응은 [ADR 0016](adr/0016-home-runtime-named-volumes.md)이며 실제 다음 예약 부팅 후 재기동은 아직 검증하지 않았다. 장애 기간 Sentry 알림 수신 여부는 확인하지 않았다.
+
+## 2026-11-16 운영 failover E2E와 새벽 예약 전환
+
+원본 증거는 [2026-11-16 디렉터리](evidence/2026-11-16/)에 있다. 모든 관찰은 공개 경로 `api-ziper.joonamin.dev`와 Bearer 인증 읽기 전용 `/_ops/circuit`를 30초 간격으로 조회했다. 릴리스는 두 origin 모두 `1338095b`였다.
+
+### Worker 운영 배포와 쿠키 노출 사고
+
+`ziper-edge` Worker를 운영 route `api-ziper.joonamin.dev/*`에 처음 배포했다. 첫 배포는 Wrangler 4.158이 생성 설정의 `tsconfig` 경로를 설정 디렉터리 기준으로 해석해 실패했다(#29에서 수정). 배포 직후 공개 응답에 보호 origin의 Cloudflare Access 세션 쿠키(`CF_Authorization`)가 `Set-Cookie`로 노출되는 것을 확인했다. route 제거 워크플로(#28, [실행 43732416839](https://github.com/JECT-Study/Ziper-5th-Infra/actions/runs/43732416839))로 즉시 route를 내렸다. 요청의 `CF_` 쿠키를 origin으로 보내지 않고 응답의 Access 쿠키를 제거하도록 Worker를 고쳤다(#30). 그 뒤 [실행 43732861406](https://github.com/JECT-Study/Ziper-5th-Infra/actions/runs/43732861406)으로 재배포했다. 재배포 후 [경계 검사](evidence/2026-11-16/boundaries-home.json)는 세션 쿠키 없음, 자격 헤더 미반사, 운영 조회 무인증·오토큰 404, 백업·보호 홈 익명 403을 확인했다. 노출된 쿠키가 실제로 수집·사용됐는지는 확인할 수 없었다.
+
+### 홈 장애 주입과 600초 판정
+
+01:02:34 KST에 홈 앱만 `recovery.py arm/stop`으로 중지했다(최대 540초 lease, [장애 시각](evidence/2026-11-16/failover-fault-marker.json)). 장애 주입 시각 기준 시간은 아래와 같다([관찰](evidence/2026-11-16/failover-observer.jsonl), [판정](evidence/2026-11-16/failover-observer.summary.json): `VERIFIED`).
+
+| 경과 | 공개 응답 | 회로 |
+| --- | --- | --- |
+| +22초 | 502(홈 무응답) | CLOSED |
+| +341초 | 502 | OPEN, `circuit_backup` |
+| +358초 | 응답 없음 | OPEN, Cloud Run 콜드 스타트 |
+| **+384초** | **200 cloudrun** | OPEN |
+| +518초 | 200 cloudrun | HALF_OPEN, 이후 홈 미복구로 다시 OPEN |
+| +699초 | 200 cloudrun | HALF_OPEN |
+| +825초 | 200 home | CLOSED |
+
+첫 백업 성공 응답은 384초로 600초 목표를 만족했다. lease 만료 39초 뒤 독립 timer가 앱을 재기동했다. HALF_OPEN 중 실패가 OPEN으로 돌아가고 이후 3회 성공으로 CLOSED가 되는 FSM도 운영에서 관찰했다. 관찰 간격이 30초이므로 각 시각의 오차는 최대 30초다.
+
+**사용자 영향:** 장애 후 회로가 열릴 때까지 약 5–6분 동안 공개 요청은 502였다. 최소 6표본·60% 정책상 의도된 감지 지연이다. 그 뒤 약 40초 동안 Cloud Run 콜드 스타트로 응답이 없거나 502였다. 600초 목표는 "백업 성공까지"이며 무중단을 뜻하지 않는다.
+
+### 03:00–06:00 예약 전환과 부팅 후 복귀
+
+02:45–06:45 KST를 관찰했다([관찰](evidence/2026-11-16/scheduled-window-observer.jsonl)). 이 중 03:00–06:00은 BIOS 예약 종료다.
+
+- 03:00:26에 reason이 `scheduled_backup`으로 바뀌었고 이 시점 요청 1건은 응답이 없었다. 03:00:57부터 Cloud Run 200이었다. 03:06에 홈 표본 실패로 회로가 OPEN이 됐지만 라우팅은 계속 Cloud Run이었다.
+- 03:10 [Cloud Run 경계 검사](evidence/2026-11-16/boundaries-scheduled-cloudrun.json)는 origin `cloudrun`에서 같은 경계 조건을 모두 통과했다.
+- 06:00 이후 reason이 `circuit_backup`으로 바뀌어 홈 회복 전까지 Cloud Run을 유지했다. 06:06 HALF_OPEN, 06:08:30에 CLOSED·홈으로 복귀했다.
+- 홈은 06:02:02에 부팅했고 app·cloudflared가 06:02:18에 수동 조작 없이 실행됐다. 두 컨테이너 모두 `State.Error`가 비어 있었고 named volume(`ziper-config-…`, `ziper-tunnel-…`)을 마운트했다([부팅 후 상태](evidence/2026-11-16/home-after-boot.jsonl)). [ADR 0016](adr/0016-home-runtime-named-volumes.md)의 부팅 재기동 문제 해결을 실제 예약 부팅에서 확인했다.
+- 관찰 460회(06:44까지) 중 200이 아닌 응답은 03:00:26의 1건이었고 마지막 관찰까지 CLOSED·홈을 유지했다.
+- [요약](evidence/2026-11-16/scheduled-window-observer.summary.json)의 판정은 `OBSERVED`다. 요약의 `firstBackupSeconds`·HALF_OPEN·복구 필드는 장애 주입 시각을 기준으로 계산하므로 장애 표지가 없는 예약 관찰에서는 null·false가 된다. 위 전이는 원본 관찰 줄에서 읽었다.
+
+### 남은 제한
+
+- Sentry Uptime 모니터와 장애 알림의 실제 수신은 확인하지 않았다. 공개 HTTP 200을 Uptime 성공으로 보지 않는다.
+- 불확실한 네트워크 실패에서의 실제 중복 쓰기, 부하와 요청당 비용은 측정하지 않았다.
+- 예약 전환 첫 요청과 장애 후 첫 백업 요청은 Cloud Run 콜드 스타트 영향을 받는다. min-instance를 두지 않는 비용 결정과 함께 감수한다.
+- 관찰은 한 번의 장애 실험과 한 번의 새벽 주기다. 반복 안정성을 증명하지 않는다.

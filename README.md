@@ -13,7 +13,7 @@ npm run check
 
 타입 생성·타입 검사·린트·Workers 런타임과 SQLite 테스트·배포 dry-run을 실행합니다. 바인딩 타입은 `wrangler types --strict-vars false --include-runtime false`로 생성해 버전 관리하며 secret 이름만 별도 타입으로 선언합니다. 대용량 runtime 타입은 `.wrangler/types/runtime.d.ts`에 매번 생성합니다. TypeScript는 현재 ESLint 지원 범위인 6.0으로 고정합니다.
 
-**쌍 운영 배포와 failover E2E는 아직 완료되지 않았습니다.** 기존 홈 릴리스는 응답하지만 GitHub runner의 보호 origin 요청이 Cloudflare challenge로 차단됩니다. 자격 비교와 실제 응답 증거, 완료·미실행 범위는 [2026-11-07 nightly walkthrough](docs/nightly-walkthrough-2026-11-07.md)에 있습니다. 기본 설정은 운영 route 없이 예약 도메인 `.invalid`를 사용하며 Cloud Run은 꺼져 있습니다. PR과 main push는 CI만 실행하고 운영 배포는 성공한 main CI 이후 수동 워크플로로 실행합니다.
+**쌍 운영 배포·failover E2E·새벽 예약 전환을 2026-11-16 운영에서 확인했습니다.** 운영 route `api-ziper.joonamin.dev/*`는 `ziper-edge` Worker가 처리합니다. 홈 앱 장애 주입 후 384초에 첫 Cloud Run 200을 받았고 홈 복구 후 CLOSED로 돌아왔습니다. 03:00–06:00 예약 구간에는 Cloud Run이 응답했고 06:02 부팅 후 앱과 Tunnel이 스스로 재기동해 06:08에 홈으로 복귀했습니다. 전환 직후 Cloud Run 콜드 스타트 동안의 무응답 구간과 미검증 항목(Sentry Uptime, 실제 중복 쓰기, 부하·비용)은 [검증 이력](docs/verification.md#2026-11-16-운영-failover-e2e와-새벽-예약-전환)에 있습니다. 저장소 기본 설정은 예약 도메인 `.invalid`이며 운영 값은 배포 워크플로가 `config/production.json`과 환경 값으로 생성합니다. PR과 main push는 CI만 실행하고 운영 배포는 성공한 main CI 이후 수동 워크플로로 실행합니다.
 
 [검증 조건과 실제 확인 범위](docs/verification.md) · [문서 지도](docs/context-map.md)
 
@@ -23,4 +23,4 @@ BIOS에서 관리하는 예정 종료는 **매일 03:00–06:00, Asia/Seoul**입
 
 일정의 출처는 `config/production.json`입니다. BIOS 일정이 달라지면 이 파일과 README를 함께 수정하고 Worker를 다시 배포합니다. 배포는 종료 전 30분 안전 여유를 포함한 **02:30–06:00**에 보류하며 이후 홈 준비 확인 후 수동 재실행합니다. 현재 Cloud Run native spend cap은 월 KRW1,000으로 조회했으며 집계 지연·다른 서비스 비용까지 포함한 절대 상한은 아닙니다.
 
-현재 예약 라우팅·읽기 전용 조회·배포 시간 가드·Discord 전송 스크립트는 작성했고 홈 수동 workflow에 연결했습니다. Cloud Run 실제 배포·600초 복구·새벽 관찰은 완료되지 않았습니다. [ADR 0002](docs/adr/0002-scheduled-operation-and-e2e.md)에 합의 정책과 미완료 범위를 기록합니다.
+현재 예약 라우팅·읽기 전용 조회·배포 시간 가드·Discord 전송 스크립트는 작성했고 홈 수동 workflow에 연결했습니다. Cloud Run 실제 배포·600초 이내 백업 응답·새벽 한 주기 관찰은 2026-11-16에 완료했습니다([증거](docs/evidence/2026-11-16/)). [ADR 0002](docs/adr/0002-scheduled-operation-and-e2e.md)에 합의 정책과 남은 제한을 기록합니다.

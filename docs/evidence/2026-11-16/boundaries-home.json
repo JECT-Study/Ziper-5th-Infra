@@ -1,0 +1,69 @@
+{
+  "checkedAt": "2026-11-15T16:00:57.944634+00:00",
+  "release": "1338095bf31ad035dbf95cd100ed10a5939c58ea",
+  "expectedOrigin": "home",
+  "ok": true,
+  "checks": {
+    "normal": {
+      "status": 200,
+      "privateCredentialHeaderPresent": false,
+      "upOnly": true,
+      "release": "1338095bf31ad035dbf95cd100ed10a5939c58ea",
+      "origin": "home",
+      "noStore": true,
+      "sessionCookie": false,
+      "cached": false
+    },
+    "validUserJwt": {
+      "status": 200,
+      "privateCredentialHeaderPresent": false,
+      "upOnly": true,
+      "release": "1338095bf31ad035dbf95cd100ed10a5939c58ea",
+      "origin": "home",
+      "noStore": true,
+      "sessionCookie": false,
+      "cached": false
+    },
+    "invalidUserJwt": {
+      "status": 401,
+      "privateCredentialHeaderPresent": false
+    },
+    "spoofedUpstreamHeadersProbe": {
+      "status": 200,
+      "privateCredentialHeaderPresent": false,
+      "upOnly": true,
+      "release": "1338095bf31ad035dbf95cd100ed10a5939c58ea",
+      "origin": "home",
+      "noStore": true,
+      "sessionCookie": false,
+      "cached": false
+    },
+    "opsUnauthenticated": {
+      "status": 404,
+      "privateCredentialHeaderPresent": false
+    },
+    "opsWrongToken": {
+      "status": 404,
+      "privateCredentialHeaderPresent": false
+    },
+    "opsAuthenticated": {
+      "status": 200,
+      "privateCredentialHeaderPresent": false,
+      "mode": "CLOSED",
+      "reason": "home"
+    },
+    "opsPostRejected": {
+      "status": 404,
+      "privateCredentialHeaderPresent": false
+    },
+    "backupAnonymousDenied": {
+      "status": 403,
+      "privateCredentialHeaderPresent": false
+    },
+    "protectedHomeAnonymousDenied": {
+      "status": 403,
+      "privateCredentialHeaderPresent": false
+    }
+  },
+  "scope": "Read-only health/auth and no reflected credential headers; backend header receipt is not observed. No business writes, member account or load benchmark"
+}
