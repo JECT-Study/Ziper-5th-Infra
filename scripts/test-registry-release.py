@@ -48,7 +48,7 @@ def manifest():
             'jarSha256': hashlib.sha256(JAR).hexdigest()}
 
 
-VERSIONS = {'ziper-runtime-properties': '1', 'ziper-home-migration-properties': '1', 'ziper-db-ca': '1'}
+VERSIONS = registry_release.secret_versions(json.loads((HOME.parents[1] / 'config/production.json').read_text()))
 CONFIG_FILES = {'application.properties': b'DB_PASSWORD=fixture-private-config\n',
                 'migration.properties': b'MIGRATION_PASSWORD=fixture-private-migrator\n',
                 'db-ca.pem': b'-----BEGIN CERTIFICATE-----\nfixture\n-----END CERTIFICATE-----\n'}

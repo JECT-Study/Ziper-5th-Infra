@@ -47,6 +47,7 @@ def mirror():
 
 
 def provider():
+    versions = deploy.secret_versions(json.loads(deploy.SCHEDULE.read_text()))
     return {'metadata': {'annotations': {'run.googleapis.com/maxScale': '1', 'run.googleapis.com/minScale': '0'}},
             'spec': {'template': {'metadata': {'annotations': {
                 'run.googleapis.com/cpu-throttling': 'true',
@@ -55,9 +56,9 @@ def provider():
                 'spec': {'containerConcurrency': 20, 'timeoutSeconds': 30, 'serviceAccountName': deploy.RUNTIME,
                          'volumes': [
                              {'name': 'config-volume-uniquename', 'secret': {'secretName': 'ziper-runtime-properties',
-                              'items': [{'key': '1', 'path': 'application.properties'}]}},
+                              'items': [{'key': versions['ziper-runtime-properties'], 'path': 'application.properties'}]}},
                              {'name': 'ca-volume-uniquename', 'secret': {'secretName': 'ziper-db-ca',
-                              'items': [{'key': '1', 'path': 'db-ca.pem'}]}}],
+                              'items': [{'key': versions['ziper-db-ca'], 'path': 'db-ca.pem'}]}}],
                          'containers': [
                     {'image': mirror()['image'], 'resources': {'limits': {'cpu': '1', 'memory': '1Gi'}},
                      'volumeMounts': [{'name': 'config-volume-uniquename', 'mountPath': '/run/ziper-config'},
@@ -259,7 +260,7 @@ class CloudRunDeployTests(unittest.TestCase):
             self.assertIn('--min=0', args)
             self.assertIn('--revision-suffix=s' + SOURCE, args)
             self.assertFalse(any('allow-unauthenticated' in arg for arg in args))
-            self.assertTrue(any('ziper-runtime-properties:1' in arg for arg in args))
+            self.assertTrue(any('ziper-runtime-properties:' + deploy.pinned_secret_versions()['ziper-runtime-properties'] in arg for arg in args))
             self.assertTrue(any('SPRING_FLYWAY_ENABLED=false' in arg for arg in args))
 
     def test_new_revision_replaces_inherited_volumes_in_one_mutation(self):
