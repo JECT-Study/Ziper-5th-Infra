@@ -112,4 +112,21 @@ describe("Cloud Run forwarding with mocked external network", () => {
       expect(ctx.storage.sql.exec("SELECT * FROM identity_refresh").toArray()).toEqual([]);
     });
   });
+
+  it("추가공개도메인도_OPEN에서_CloudRun백업으로전환하고_XForwardedHost를유지한다", async () => {
+    await open();
+    outbound.mockImplementationOnce(() => Promise.resolve(googleReply()));
+    outbound.mockImplementationOnce(input => {
+      const request = new Request(input);
+      expect(request.url).toBe("https://backup.run.app/readyz");
+      expect(request.headers.get("X-Forwarded-Host")).toBe("extra.example.org");
+      expect(request.headers.get("X-Forwarded-Proto")).toBe("https");
+      expect(request.headers.get("X-Serverless-Authorization")).toMatch(/^Bearer fixture\./);
+      return Promise.resolve(Response.json({ status: "UP" }));
+    });
+    const response = await exports.default.fetch("https://extra.example.org/readyz");
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ status: "UP" });
+    expect(outbound).toHaveBeenCalledTimes(2);
+  });
 });

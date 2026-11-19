@@ -30,6 +30,7 @@
   ],
   "vars": {
     "PUBLIC_ORIGIN": "https://api-ziper.joonamin.dev",
+    "EXTRA_PUBLIC_ORIGINS": "",
     "HOME_ORIGIN": "https://home-origin.invalid",
     "BACKUP_ORIGIN": "",
     "BACKUP_ENABLED": "false",

@@ -32,6 +32,7 @@ jobs:
       CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
       CLOUDFLARE_ZONE_NAME: ${{ vars.CLOUDFLARE_ZONE_NAME }}
       PUBLIC_ORIGIN: ${{ vars.PUBLIC_ORIGIN }}
+      EXTRA_PUBLIC_ORIGINS: ${{ vars.EXTRA_PUBLIC_ORIGINS || '' }}
       HOME_ORIGIN: ${{ vars.HOME_ORIGIN }}
       BACKUP_ENABLED: ${{ vars.BACKUP_ENABLED || 'false' }}
       BACKUP_ORIGIN: ${{ vars.BACKUP_ORIGIN }}
@@ -58,6 +59,10 @@ jobs:
         env:
           HOME_ACCESS_CLIENT_ID: ${{ secrets.HOME_ACCESS_CLIENT_ID }}
           HOME_ACCESS_CLIENT_SECRET: ${{ secrets.HOME_ACCESS_CLIENT_SECRET }}
+      - name: Ensure zone bypass routes before custom hostname wildcard
+        run: python3 scripts/ensure-saas-bypass-routes.py
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       - name: Deploy Worker and SQLite Durable Object
         run: npx wrangler deploy --config .wrangler/deployment/wrangler.json --secrets-file "$RUNNER_TEMP/ziper-worker-secrets.json" --strict --no-autoconfig
         env:

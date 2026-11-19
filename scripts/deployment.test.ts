@@ -8,7 +8,7 @@ import { z } from "zod";
 import { createHash } from "node:crypto";
 
 const configSchema = z.object({
-  vars: z.object({ BACKUP_ENABLED: z.string() }),
+  vars: z.object({ BACKUP_ENABLED: z.string(), EXTRA_PUBLIC_ORIGINS: z.string() }),
   routes: z.array(z.object({ pattern: z.string(), zone_name: z.string() }))
 });
 
@@ -105,17 +105,35 @@ await test("배포설정경계_경로와비밀파일을검사하고_잘못된설
     const config = configSchema.parse(JSON.parse(raw));
     assert.deepEqual(config.routes, [{ pattern: "api.example.test/*", zone_name: "example.test" }]);
     assert.equal(config.vars.BACKUP_ENABLED, "false");
+    assert.equal(config.vars.EXTRA_PUBLIC_ORIGINS, "");
     // Wrangler joins a tsconfig override onto the generated config directory, so none is emitted.
     assert.ok(!("tsconfig" in config));
     assert.ok(!raw.includes("fixture-secret"));
     assert.equal(statSync(join(directory, "ziper-worker-secrets.json")).mode & 0o777, 0o600);
+    const customHost = spawnSync(process.execPath, ["scripts/prepare-deploy.ts"], {
+      env: { ...env, EXTRA_PUBLIC_ORIGINS: "https://api.ziper.cc, https://alt.example.test" }, encoding: "utf8"
+    });
+    assert.equal(customHost.status, 0);
+    const customConfig = configSchema.parse(JSON.parse(readFileSync(".wrangler/deployment/wrangler.json", "utf8")));
+    assert.deepEqual(customConfig.routes, [
+      { pattern: "api.example.test/*", zone_name: "example.test" },
+      { pattern: "*/*", zone_name: "example.test" },
+      { pattern: "alt.example.test/*", zone_name: "example.test" }
+    ]);
+    assert.equal(customConfig.vars.EXTRA_PUBLIC_ORIGINS, "https://api.ziper.cc,https://alt.example.test");
     for (const override of [
       { HOME_ORIGIN: "https://api.example.test" },
       { HOME_ORIGIN: "https://name:password@home.example.test" },
       { HOME_ORIGIN: "https://home-origin.invalid" },
       { HOME_ORIGIN: "https://home.example.test/readyz" },
       { BACKUP_ENABLED: "true" },
-      { CLOUDFLARE_ZONE_NAME: "unrelated.test" }
+      { CLOUDFLARE_ZONE_NAME: "unrelated.test" },
+      { EXTRA_PUBLIC_ORIGINS: "https://api.example.test" },
+      { EXTRA_PUBLIC_ORIGINS: "https://home.example.test" },
+      { EXTRA_PUBLIC_ORIGINS: "https://example.test" },
+      { EXTRA_PUBLIC_ORIGINS: "https://api.ziper.cc,https://api.ziper.cc" },
+      { EXTRA_PUBLIC_ORIGINS: "http://api.ziper.cc" },
+      { EXTRA_PUBLIC_ORIGINS: "https://api.ziper.cc/path" }
     ]) {
       const invalid = spawnSync(process.execPath, ["scripts/prepare-deploy.ts"], { env: { ...env, ...override }, encoding: "utf8" });
       assert.notEqual(invalid.status, 0);
