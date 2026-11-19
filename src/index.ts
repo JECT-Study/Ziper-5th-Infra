@@ -22,9 +22,9 @@ export default {
     try {
       const config = getConfig(env);
       const incoming = new URL(request.url);
-      if (incoming.origin !== config.publicOrigin) return new Response(null, { status: 404 });
+      if (!config.publicOrigins.includes(incoming.origin)) return new Response(null, { status: 404 });
       if (incoming.pathname === "/_ops/circuit") {
-        if (request.method !== "GET" || !env.OPS_READ_TOKEN || env.OPS_READ_TOKEN.length < 32) return new Response(null, { status: 404 });
+        if (incoming.origin !== config.publicOrigin || request.method !== "GET" || !env.OPS_READ_TOKEN || env.OPS_READ_TOKEN.length < 32) return new Response(null, { status: 404 });
         const supplied = request.headers.get("Authorization") ?? "";
         const encoder = new TextEncoder();
         const [actual, expected] = await Promise.all([supplied, `Bearer ${env.OPS_READ_TOKEN}`].map(value => crypto.subtle.digest("SHA-256", encoder.encode(value))));

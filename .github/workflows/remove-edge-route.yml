@@ -35,3 +35,4 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ZONE_NAME: ${{ vars.CLOUDFLARE_ZONE_NAME }}
           PUBLIC_ORIGIN: ${{ vars.PUBLIC_ORIGIN }}
+          EXTRA_PUBLIC_ORIGINS: ${{ vars.EXTRA_PUBLIC_ORIGINS || '' }}

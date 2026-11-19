@@ -157,4 +157,24 @@ describe("Worker and SQLite Durable Object", () => {
     expect(outbound).not.toHaveBeenCalled();
   });
 
+  it("추가공개도메인은_홈서버로전달하고_미등록도메인과_추가도메인ops경로는_404로차단한다", async () => {
+    await seed(initialState(Date.now()));
+    outbound.mockImplementationOnce(input => {
+      const request = new Request(input);
+      expect(request.url).toBe("https://home.example.test/readyz");
+      expect(request.headers.get("X-Forwarded-Host")).toBe("extra.example.org");
+      expect(request.headers.get("X-Forwarded-Proto")).toBe("https");
+      expect(request.headers.get("CF-Access-Client-Secret")).toBe("test-secret");
+      return Promise.resolve(Response.json({ status: "UP" }));
+    });
+    const allowed = await exports.default.fetch("https://extra.example.org/readyz");
+    expect(allowed.status).toBe(200);
+    expect(await allowed.json()).toEqual({ status: "UP" });
+    expect((await exports.default.fetch("https://unknown.example.org/readyz")).status).toBe(404);
+    expect((await exports.default.fetch("https://extra.example.org/_ops/circuit", {
+      headers: { Authorization: "Bearer ops-fixture-secret-token-32-bytes-long" }
+    })).status).toBe(404);
+    expect(outbound).toHaveBeenCalledTimes(1);
+  });
+
 });

@@ -7,6 +7,7 @@ export default defineConfig({
     wrangler: { configPath: "./wrangler.jsonc" },
     miniflare: { bindings: {
       OPS_READ_TOKEN: "ops-fixture-secret-token-32-bytes-long", SCHEDULE_ENABLED: "false", PUBLIC_ORIGIN: "https://api.example.test",
+      EXTRA_PUBLIC_ORIGINS: "https://extra.example.org",
       HOME_ORIGIN: "https://home.example.test",
       BACKUP_ENABLED: "false",
       BACKUP_ORIGIN: "",

@@ -8,13 +8,21 @@ function origin(value: string): string {
   return url.origin;
 }
 
+function extraOrigins(value: string | undefined): string[] {
+  if (!value?.trim()) return [];
+  const parsed = value.split(",").map((part) => part.trim()).filter(Boolean).map(origin);
+  if (new Set(parsed).size !== parsed.length) throw new Error("Duplicate extra public origin");
+  return parsed;
+}
+
 const homeSecrets = z.object({
   HOME_ACCESS_CLIENT_ID: z.string().min(1),
   HOME_ACCESS_CLIENT_SECRET: z.string().min(1)
 });
 
-export function getConfig(env: Pick<Env, "PUBLIC_ORIGIN" | "HOME_ORIGIN" | "BACKUP_ORIGIN" | "BACKUP_ENABLED" | "HOME_ACCESS_CLIENT_ID" | "HOME_ACCESS_CLIENT_SECRET">) {
+export function getConfig(env: Pick<Env, "PUBLIC_ORIGIN" | "HOME_ORIGIN" | "BACKUP_ORIGIN" | "BACKUP_ENABLED" | "HOME_ACCESS_CLIENT_ID" | "HOME_ACCESS_CLIENT_SECRET"> & { EXTRA_PUBLIC_ORIGINS?: string }) {
   const publicOrigin = origin(env.PUBLIC_ORIGIN);
+  const extraPublicOrigins = extraOrigins(env.EXTRA_PUBLIC_ORIGINS);
   const homeOrigin = origin(env.HOME_ORIGIN);
   if (publicOrigin === homeOrigin) throw new Error("Origin must bypass the Worker route");
   const credentials = homeSecrets.parse(env);
@@ -23,7 +31,11 @@ export function getConfig(env: Pick<Env, "PUBLIC_ORIGIN" | "HOME_ORIGIN" | "BACK
   if (backupOrigin && (!new URL(backupOrigin).hostname.endsWith(".run.app") || backupOrigin === publicOrigin || backupOrigin === homeOrigin)) {
     throw new Error("Backup must use its Cloud Run service URL");
   }
-  return { publicOrigin, homeOrigin, backupOrigin, credentials };
+  if (extraPublicOrigins.some((item) => item === publicOrigin || item === homeOrigin || item === backupOrigin)) {
+    throw new Error("Invalid extra public origin");
+  }
+  const publicOrigins = [publicOrigin, ...extraPublicOrigins];
+  return { publicOrigin, extraPublicOrigins, publicOrigins, homeOrigin, backupOrigin, credentials };
 }
 
 export function homeHeaders(env: Parameters<typeof getConfig>[0]): Headers {

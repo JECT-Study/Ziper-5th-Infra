@@ -41,6 +41,7 @@ deploy job은 packages:read의 별도 job 토큰, 작은 metadata JSON과 고정
 | Variable | `CLOUDFLARE_ACCOUNT_ID` | 대상 계정 ID |
 | Variable | `CLOUDFLARE_ZONE_NAME` | `joonamin.dev` |
 | Variable | `PUBLIC_ORIGIN` | `https://api-ziper.joonamin.dev` |
+| Variable | `EXTRA_PUBLIC_ORIGINS` | 선택. 쉼표 구분 추가 공개 HTTPS origin (예: `https://api.ziper.cc`). 외부 도메인 포함 시 `ziper-edge`가 `*/*` route를 추가하고 배포 전 zone bypass(`None`) route를 보장 |
 | Variable | `HOME_ORIGIN` | 준비한 홈 전용 HTTPS origin, 경로·쿼리·인증 정보 없음 |
 | Variable | `BACKUP_ENABLED` | 기본 `false`; 비용·IAM·기동 검증 전 활성화하지 않음 |
 | Variable | `BACKUP_ORIGIN` | 활성화 시 실제 Cloud Run 서비스 origin (`https://*.run.app`) |
@@ -57,7 +58,7 @@ deploy job은 packages:read의 별도 job 토큰, 작은 metadata JSON과 고정
 
 `main`에 머지한 뒤 **CI** workflow의 해당 SHA push 실행이 성공했는지 확인하고 **Deploy edge manually**를 main에서 수동 실행한다. feature 브랜치의 dispatch는 배포 job을 실행하지 않는다. CI 성공 여부는 현재 HEAD와 동일한 SHA로 확인한다. 성공한 PR CI만으로는 배포되지 않는다.
 
-워크플로는 검사 → 비밀을 제외한 route 설정과 임시 secret 파일 준비 → 보호된 홈 `/readyz` 확인 → Worker·SQLite DO 업로드 → 공개 `/readyz` 3회 확인 순서다. `prepare-deploy.ts`는 현재 JSON 형태의 `wrangler.jsonc`를 읽어 `.wrangler/deployment/wrangler.json`을 생성한다. 생성 파일의 실제 account·host·route는 배포 실행의 설정을 따른다. 새 애플리케이션·Tunnel·Access·DNS·Cloud Run·청구 계정은 생성하지 않는다.
+워크플로는 검사 → 비밀을 제외한 route 설정과 임시 secret 파일 준비 → 보호된 홈 `/readyz` 확인 → (외부 커스텀 도메인 설정 시 `*.<zone>/*`·`<zone>/*` `None` bypass route 보장) → Worker·SQLite DO 업로드 → 공개 `/readyz` 3회 확인 순서다. `prepare-deploy.ts`는 현재 JSON 형태의 `wrangler.jsonc`를 읽어 `.wrangler/deployment/wrangler.json`을 생성한다. 생성 파일의 실제 account·host·route는 배포 실행의 설정을 따른다. 새 애플리케이션·Tunnel·Access·DNS·Cloud Run·청구 계정은 생성하지 않는다. ([ADR 0017](adr/0017-custom-hostname-edge-routing.md))
 
 공개 검사 성공은 정상 경로의 readiness만 확인한다. DO alarm의 장기 실행, OPEN/HALF_OPEN, Cloud Run, 실제 10분 목표, Sentry uptime은 이 단계로 검증되지 않는다. 첫 공개 요청은 DO와 다음 분 alarm을 초기화한다. 이후 사용자 트래픽이 없어도 alarm이 검사를 이어간다.
 
