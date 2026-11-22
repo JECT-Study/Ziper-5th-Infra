@@ -132,7 +132,7 @@ cloudflared 시작이나 current-version 기록 실패도 app/readiness 실패�
 
 새 Infra main SHA의 CI를 확인한 뒤 Server의 `uses`와 `infra_sha`를 갱신하고, 같은 Infra SHA의 홈 제어 파일을 설치해 `/opt/ziper/ci/compose.yml`에 홈 실행 값이 포함되도록 합니다. 쌍 배포 후 두 origin의 실행 값을 읽어 대조하고, 백업에서 저장한 미러링 대상 카드가 홈 복귀 후 처리되는지 확인합니다.
 
-쌍 배포는 GHCR 발행 → AR 미러 준비 → protected home 확인 → Cloud Run runtime·private probes → 홈 runtime·public probes 순서다. 준비 발행은 보류 중에도 가능하며 런타임은 각 변경 직전의 시간 가드로 차단한다. 준비 오류를 deferred로 숨기지 않는다. 배포 성공 알림은 양쪽 readiness가 통과한 때만 paired다.
+쌍 배포는 GHCR 발행 → protected home 확인 → 홈 runtime(Flyway 포함)·public probes → AR 미러 준비 → Cloud Run runtime·private probes 순서다([ADR 0018](adr/0018-home-first-paired-deployment-order.md)). 준비 발행(GHCR·AR 미러)은 보류 중에도 가능하며 런타임은 각 변경 직전의 시간 가드로 차단한다. 준비 오류를 deferred로 숨기지 않는다. 이전 Cloud Run revision이 `Ready=False`·`ConfigurationsReady=False`로 확정 실패했고 직전 정상 revision이 100% 트래픽을 서빙 중이라면 새 소스 SHA에 한해 대체 배포를 허용하며, `Unknown`(조정 중) 상태나 동일 SHA 재시도는 계속 차단한다. `gcloud run deploy` 실패 시 생성된 revision을 읽기 전용 조회해 정적 사유 코드(`cloud_run_revision_failed_<reason>`)를 반환한다. 배포 성공 알림은 양쪽 readiness가 통과한 때만 paired다.
 
 GCP 부트스트랩은 `ZIPER_GCLOUD=<gcloud 경로> python3 scripts/bootstrap-gcp-production.py`로 명시 실행한다. 운영 비밀의 원본은 Secret Manager의 고정 버전이다([ADR 0015](adr/0015-secret-manager-single-source.md)). 기본 실행은 SA·WIF·Secret 접근 권한만 맞추고 노트북 파일을 읽지 않는다. 최초 이관에만 `--import-runtime-env`로 .config/ziper/deployment의 runtime.env와 db-ca.pem을 올리며, 출력한 최신 버전 번호를 `config/production.json`의 `secretVersions`에 반영한다. 값은 출력하지 않는다. source protection과 전용 WIF 조건을 먼저 설정하며 CI 장기 GCP 키는 만들지 않는다. 비용 cap은 Cloud Run 범위이며 지출 0원의 보장은 아니다.
 

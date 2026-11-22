@@ -43,3 +43,5 @@
 - [0016 홈 런타임 파일을 Docker named volume으로 공급](adr/0016-home-runtime-named-volumes.md) — 0009·0011의 부팅 후 재기동 전제를 보완
 
 - [0017 외부 커스텀 도메인(Cloudflare for SaaS)의 `ziper-edge` Worker 경유 라우팅](adr/0017-custom-hostname-edge-routing.md)
+
+- [0018 쌍 배포에서 홈(Flyway 실행) 선행 배포와 실패 Cloud Run revision 대체 허용](adr/0018-home-first-paired-deployment-order.md)
