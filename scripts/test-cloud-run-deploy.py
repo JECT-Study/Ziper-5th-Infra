@@ -262,6 +262,19 @@ class CloudRunDeployTests(unittest.TestCase):
             self.assertFalse(any('allow-unauthenticated' in arg for arg in args))
             self.assertTrue(any('ziper-runtime-properties:' + deploy.pinned_secret_versions()['ziper-runtime-properties'] in arg for arg in args))
             self.assertTrue(any('SPRING_FLYWAY_ENABLED=false' in arg for arg in args))
+            deployment_env = next(arg.removeprefix('--set-env-vars=') for arg in args
+                                  if arg.startswith('--set-env-vars='))
+            self.assertIn('APP_STORAGE_WORKERENABLED=false', deployment_env.split(','))
+
+    def test_revision_requires_disabled_image_mirror_worker(self):
+        for value in (None, 'true'):
+            with self.subTest(value=value):
+                changed = revision()
+                env = changed['spec']['containers'][0]['env']
+                env[:] = [entry for entry in env if entry['name'] != 'APP_STORAGE_WORKERENABLED']
+                if value is not None:
+                    env.append({'name': 'APP_STORAGE_WORKERENABLED', 'value': value})
+                self.assertFalse(deploy.revision_matches(changed, mirror()))
 
     def test_new_revision_replaces_inherited_volumes_in_one_mutation(self):
         existing = provider()

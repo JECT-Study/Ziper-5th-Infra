@@ -231,6 +231,7 @@ def desired_env(source):
             'SPRING_CONFIG_IMPORT': 'file:/run/ziper-config/application.properties',
             'SPRING_FLYWAY_ENABLED': 'false', 'APP_RUNTIME_MODE': 'server',
             'APP_MONITORING_METRICS_ENABLED': 'false', 'APP_MONITORING_ORIGIN': 'cloudrun',
+            'APP_STORAGE_WORKERENABLED': 'false',
             'SENTRY_ENVIRONMENT': 'prod', 'SENTRY_RELEASE': source,
             'JAVA_TOOL_OPTIONS': '-XX:MaxRAMPercentage=70'}
 
