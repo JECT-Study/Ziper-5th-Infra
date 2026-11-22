@@ -14,6 +14,7 @@ services:
       SENTRY_RELEASE: ${ZIPER_VERSION:?Supply the source commit}
       APP_MONITORING_METRICS_ENABLED: 'true'
       APP_MONITORING_ORIGIN: home
+      APP_STORAGE_WORKERENABLED: 'true'
       JAVA_TOOL_OPTIONS: '-XX:MaxRAMPercentage=70'
     ports:
       - '127.0.0.1:${ZIPER_HTTP_PORT:-18081}:8080'

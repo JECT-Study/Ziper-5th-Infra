@@ -128,6 +128,10 @@ cloudflared 시작이나 current-version 기록 실패도 app/readiness 실패�
 
 ## 비공개 백업과 운영 검증 준비
 
+상품 이미지 미러링은 홈 Compose에서 `APP_STORAGE_WORKERENABLED=true`로 실행하고 Cloud Run 배포 환경에는 `false`를 지정합니다. Cloud Run revision 확인은 값이 누락되거나 `true`이면 실패합니다. 두 값은 공통 Secret Manager 설정과 별개인 origin별 환경 변수이며, 미러링 대상 카드 저장과 DB 작업 등록은 두 origin에서 계속 실행합니다. 기존 revision은 소스 SHA로 식별하므로 정책 적용은 새 Server 소스 SHA를 사용한 쌍 배포로 진행합니다. [Server의 이미지 미러링 실행 정책](https://github.com/JECT-Study/Ziper-5th-Server/blob/develop/docs/adr/0020-home-image-mirror-worker.md)
+
+새 Infra main SHA의 CI를 확인한 뒤 Server의 `uses`와 `infra_sha`를 갱신하고, 같은 Infra SHA의 홈 제어 파일을 설치해 `/opt/ziper/ci/compose.yml`에 홈 실행 값이 포함되도록 합니다. 쌍 배포 후 두 origin의 실행 값을 읽어 대조하고, 백업에서 저장한 미러링 대상 카드가 홈 복귀 후 처리되는지 확인합니다.
+
 쌍 배포는 GHCR 발행 → AR 미러 준비 → protected home 확인 → Cloud Run runtime·private probes → 홈 runtime·public probes 순서다. 준비 발행은 보류 중에도 가능하며 런타임은 각 변경 직전의 시간 가드로 차단한다. 준비 오류를 deferred로 숨기지 않는다. 배포 성공 알림은 양쪽 readiness가 통과한 때만 paired다.
 
 GCP 부트스트랩은 `ZIPER_GCLOUD=<gcloud 경로> python3 scripts/bootstrap-gcp-production.py`로 명시 실행한다. 운영 비밀의 원본은 Secret Manager의 고정 버전이다([ADR 0015](adr/0015-secret-manager-single-source.md)). 기본 실행은 SA·WIF·Secret 접근 권한만 맞추고 노트북 파일을 읽지 않는다. 최초 이관에만 `--import-runtime-env`로 .config/ziper/deployment의 runtime.env와 db-ca.pem을 올리며, 출력한 최신 버전 번호를 `config/production.json`의 `secretVersions`에 반영한다. 값은 출력하지 않는다. source protection과 전용 WIF 조건을 먼저 설정하며 CI 장기 GCP 키는 만들지 않는다. 비용 cap은 Cloud Run 범위이며 지출 0원의 보장은 아니다.
