@@ -7,7 +7,7 @@
   },
   "monthlyBudgetUsd": 1,
   "secretVersions": {
-    "ziper-runtime-properties": "4",
+    "ziper-runtime-properties": "6",
     "ziper-home-migration-properties": "1",
     "ziper-db-ca": "1"
   }
