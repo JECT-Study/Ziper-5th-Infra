@@ -356,6 +356,42 @@ def revision_matches(resource, release):
         return False
 
 
+def condition_for(resource, kind):
+    if not isinstance(resource, dict) or not isinstance(resource.get('status'), dict):
+        return {}
+    conditions = resource['status'].get('conditions', [])
+    if not isinstance(conditions, list):
+        return {}
+    return next((c for c in conditions if isinstance(c, dict) and c.get('type') == kind), {})
+
+
+def failed_revision_reason(resource):
+    condition = condition_for(resource, 'Ready')
+    if condition.get('status') != 'False':
+        return None
+    reason = condition.get('reason', '')
+    return reason if isinstance(reason, str) and re.fullmatch(r'[A-Za-z][A-Za-z0-9_]{0,63}', reason) else 'unspecified'
+
+
+def preceding_revision_terminally_failed(service, target_revision):
+    """Cloud Run forbids deleting a failed latestCreatedRevisionName; only a new revision can supersede it."""
+    if (condition_for(service, 'Ready').get('status') != 'False'
+            or condition_for(service, 'ConfigurationsReady').get('status') != 'False'):
+        return False
+    status = service.get('status', {})
+    latest_created = status.get('latestCreatedRevisionName')
+    latest_ready = status.get('latestReadyRevisionName')
+    if (not isinstance(latest_created, str) or not latest_created
+            or not isinstance(latest_ready, str) or not latest_ready
+            or latest_created == latest_ready or latest_created == target_revision
+            or not serves_revision(service, latest_ready)):
+        return False
+    raw = gcloud('run', 'revisions', 'describe', latest_created, '--region', REGION, missing=True, timeout=30)
+    if raw is None:
+        return False
+    return failed_revision_reason(resource_value(raw)) is not None
+
+
 def wait_for_revision(resource, revision, release, *, now=time.monotonic, sleep=time.sleep, budget=180):
     deadline = now() + budget
     while True:
@@ -366,12 +402,9 @@ def wait_for_revision(resource, revision, release, *, now=time.monotonic, sleep=
             if not isinstance(digest, str) or digest.rsplit('@', 1)[-1] != release['artifactManifestDigest']:
                 raise Refused('cloud_run_revision_image_mismatch')
             return resource
-        condition = next((c for c in resource.get('status', {}).get('conditions', [])
-                          if c.get('type') == 'Ready'), {})
-        if condition.get('status') == 'False':
-            reason = condition.get('reason', '')
-            safe = reason if isinstance(reason, str) and re.fullmatch(r'[A-Za-z][A-Za-z0-9_]{0,63}', reason) else 'unspecified'
-            raise Refused('cloud_run_revision_failed_' + safe)
+        reason = failed_revision_reason(resource)
+        if reason is not None:
+            raise Refused('cloud_run_revision_failed_' + reason)
         remaining = deadline - now()
         if remaining <= 0:
             raise Refused('revision_still_reconciling_no_deploy_reissued')
@@ -426,20 +459,33 @@ def deploy(release, output_path):
         status = resource.get('status', {}) if isinstance(resource, dict) else {}
         if resource is not None and (not is_ready(resource)
                 or status.get('latestCreatedRevisionName') != status.get('latestReadyRevisionName')):
-            raise Refused('preceding_deployment_not_ready_inspect_before_retry')
+            if not preceding_revision_terminally_failed(resource, revision):
+                raise Refused('preceding_deployment_not_ready_inspect_before_retry')
         # Recheck immediately before the mutation after all lookups.
         if not deployment_allowed():
             raise Refused('deployment_deferred_by_home_schedule')
         env = ','.join(k + '=' + v for k, v in desired_env(release['sourceSha']).items())
-        gcloud('run', 'deploy', SERVICE, '--region', REGION, '--image', release['image'],
-               '--service-account', RUNTIME, '--execution-environment=gen2', '--cpu=1', '--memory=1Gi',
-               '--min=0', '--max=1', '--cpu-throttling', '--no-cpu-boost', '--concurrency=20', '--timeout=30',
-               '--revision-suffix=s' + release['sourceSha'],
-               '--startup-probe=httpGet.path=/readyz,httpGet.port=8080,timeoutSeconds=3,periodSeconds=5,failureThreshold=30',
-               '--set-env-vars=' + env,
-               '--clear-volume-mounts', '--clear-volumes',
-               secret_flag(),
-               '--labels=service=ziper,source-sha=' + release['sourceSha'])
+        try:
+            gcloud('run', 'deploy', SERVICE, '--region', REGION, '--image', release['image'],
+                   '--service-account', RUNTIME, '--execution-environment=gen2', '--cpu=1', '--memory=1Gi',
+                   '--min=0', '--max=1', '--cpu-throttling', '--no-cpu-boost', '--concurrency=20', '--timeout=30',
+                   '--revision-suffix=s' + release['sourceSha'],
+                   '--startup-probe=httpGet.path=/readyz,httpGet.port=8080,timeoutSeconds=3,periodSeconds=5,failureThreshold=30',
+                   '--set-env-vars=' + env,
+                   '--clear-volume-mounts', '--clear-volumes',
+                   secret_flag(),
+                   '--labels=service=ziper,source-sha=' + release['sourceSha'])
+        except Refused as error:
+            if str(error) == 'gcloud_run_deploy_' + SERVICE + '_outcome_unknown':
+                try:
+                    created = gcloud('run', 'revisions', 'describe', revision, '--region', REGION, missing=True, timeout=30)
+                except Refused:
+                    created = None
+                if created is not None:
+                    reason = failed_revision_reason(resource_value(created))
+                    if reason is not None:
+                        raise Refused('cloud_run_revision_failed_' + reason) from None
+            raise
         resource = resource_value(gcloud('run', 'services', 'describe', SERVICE, '--region', REGION))
         revision_data = resource_value(gcloud('run', 'revisions', 'describe', revision, '--region', REGION))
         wait_for_revision(revision_data, revision, release)

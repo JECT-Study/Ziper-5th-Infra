@@ -238,6 +238,117 @@ class CloudRunDeployTests(unittest.TestCase):
             self.assertEqual(str(error.exception), 'preceding_deployment_not_ready_inspect_before_retry')
             self.assertEqual(api.call_count, 2)
 
+    def test_terminally_failed_preceding_revision_can_be_superseded_by_new_source(self):
+        previous_ready = 'ziper-backup-s' + '9' * 40
+        previous_failed = 'ziper-backup-s' + '8' * 40
+        service = provider()
+        service['status'].update({
+            'latestCreatedRevisionName': previous_failed,
+            'latestReadyRevisionName': previous_ready,
+            'traffic': [{'revisionName': previous_ready, 'percent': 100, 'latestRevision': True}],
+            'conditions': [
+                {'type': 'Ready', 'status': 'False', 'reason': 'HealthCheckContainerError'},
+                {'type': 'ConfigurationsReady', 'status': 'False', 'reason': 'HealthCheckContainerError'},
+                {'type': 'RoutesReady', 'status': 'False', 'reason': 'HealthCheckContainerError'},
+            ],
+        })
+        failed_rev = revision()
+        failed_rev['status']['conditions'] = [
+            {'type': 'Ready', 'status': 'False', 'reason': 'HealthCheckContainerError',
+             'message': 'private-log-link-marker'},
+        ]
+        with tempfile.TemporaryDirectory() as directory, patch.object(deploy, 'deployment_allowed', return_value=True), \
+                patch.object(deploy, 'gcloud', side_effect=[
+                    None, json.dumps(service), json.dumps(failed_rev), '{}',
+                    json.dumps(provider()), json.dumps(revision()),
+                ]) as api:
+            result = deploy.deploy(mirror(), Path(directory) / 'release.json')
+            self.assertEqual(result['revision'], REVISION)
+            mutations = [call.args for call in api.call_args_list if call.args[:2] == ('run', 'deploy')]
+            self.assertEqual(len(mutations), 1)
+            self.assertEqual(api.call_args_list[2].args[:4], ('run', 'revisions', 'describe', previous_failed))
+
+    def test_reconciling_or_unready_traffic_preceding_revision_is_still_refused(self):
+        previous_ready = 'ziper-backup-s' + '9' * 40
+        previous_created = 'ziper-backup-s' + '8' * 40
+
+        def make_service(*, ready_status='False', config_status='False', traffic_ready=True,
+                         latest_created=previous_created):
+            service = provider()
+            service['status'].update({
+                'latestCreatedRevisionName': latest_created,
+                'latestReadyRevisionName': previous_ready,
+                'traffic': [{'revisionName': previous_ready if traffic_ready else previous_created, 'percent': 100}],
+                'conditions': [
+                    {'type': 'Ready', 'status': ready_status},
+                    {'type': 'ConfigurationsReady', 'status': config_status},
+                ],
+            })
+            return service
+
+        reconciling_rev = revision()
+        reconciling_rev['status']['conditions'] = [{'type': 'Ready', 'status': 'Unknown'}]
+
+        cases = [
+            ('reconciling_service', make_service(ready_status='Unknown'), []),
+            ('config_ready_unknown', make_service(config_status='Unknown'), []),
+            ('traffic_not_on_ready', make_service(traffic_ready=False), []),
+            ('same_target_revision', make_service(latest_created=REVISION), []),
+            ('reconciling_revision', make_service(), [json.dumps(reconciling_rev)]),
+            ('missing_revision', make_service(), [None]),
+        ]
+        for label, service, extra_reads in cases:
+            with self.subTest(case=label), tempfile.TemporaryDirectory() as directory, \
+                    patch.object(deploy, 'deployment_allowed', return_value=True), \
+                    patch.object(deploy, 'gcloud', side_effect=[None, json.dumps(service), *extra_reads]) as api:
+                with self.assertRaises(deploy.Refused) as error:
+                    deploy.deploy(mirror(), Path(directory) / 'release.json')
+                self.assertEqual(str(error.exception), 'preceding_deployment_not_ready_inspect_before_retry')
+                self.assertFalse(any(call.args[:2] == ('run', 'deploy') for call in api.call_args_list))
+
+    def test_deploy_outcome_unknown_classifies_failed_revision_reason_without_disclosure(self):
+        failed_rev = revision()
+        failed_rev['status']['conditions'] = [
+            {'type': 'Ready', 'status': 'False', 'reason': 'HealthCheckContainerError',
+             'message': 'private-schema-validation-marker'},
+        ]
+
+        def fake_gcloud(*args, **kwargs):
+            if args[:2] == ('run', 'deploy'):
+                raise deploy.Refused('gcloud_run_deploy_ziper-backup_outcome_unknown')
+            if args[:4] == ('run', 'revisions', 'describe', REVISION):
+                if fake_gcloud.calls == 0:
+                    fake_gcloud.calls += 1
+                    return None
+                return json.dumps(failed_rev)
+            if args[:3] == ('run', 'services', 'describe'):
+                return None
+            raise AssertionError(f'unexpected gcloud call: {args}')
+
+        fake_gcloud.calls = 0
+        with tempfile.TemporaryDirectory() as directory, patch.object(deploy, 'deployment_allowed', return_value=True), \
+                patch.object(deploy, 'gcloud', side_effect=fake_gcloud):
+            with self.assertRaises(deploy.Refused) as error:
+                deploy.deploy(mirror(), Path(directory) / 'release.json')
+            self.assertEqual(str(error.exception), 'cloud_run_revision_failed_HealthCheckContainerError')
+            self.assertNotIn('private-schema-validation-marker', str(error.exception))
+
+    def test_deploy_home_workflow_deploys_home_before_cloud_run_backup(self):
+        workflow = (Path(__file__).resolve().parent.parent / '.github/workflows/deploy-home.yml').read_text()
+        deploy_pos = workflow.index('\n  deploy:\n')
+        backup_pos = workflow.index('\n  backup:\n')
+        notify_pos = workflow.index('\n  notify:\n')
+        self.assertLess(deploy_pos, backup_pos)
+        self.assertLess(backup_pos, notify_pos)
+        deploy_block = workflow[deploy_pos:backup_pos]
+        backup_block = workflow[backup_pos:notify_pos]
+        self.assertIn('needs: publish', deploy_block)
+        self.assertIn('scripts/verify-origin.ts', deploy_block)
+        self.assertIn('name: home-origin-health-attempt-', deploy_block)
+        self.assertIn('needs: [publish, deploy]', backup_block)
+        self.assertIn("needs.publish.outputs.deferred == 'true' && needs.deploy.result == 'skipped'", backup_block)
+        self.assertIn("needs.deploy.outputs.deferred != 'true'", backup_block)
+
     def test_ready_same_release_is_read_and_verified_without_redeployment(self):
         with tempfile.TemporaryDirectory() as directory, patch.object(deploy, 'deployment_allowed', return_value=True), \
                 patch.object(deploy, 'gcloud', side_effect=[json.dumps(revision()), json.dumps(provider())]) as api:
